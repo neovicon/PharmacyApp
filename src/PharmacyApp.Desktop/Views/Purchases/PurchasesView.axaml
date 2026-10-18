@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PharmacyApp.Desktop.ViewModels.Purchases"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             x:Class="PharmacyApp.Desktop.Views.Purchases.PurchasesView"
+             x:DataType="vm:PurchasesViewModel">
+    <Design.DataContext>
+        <vm:PurchasesViewModel />
+    </Design.DataContext>
+    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16">
+        <TextBlock Text="🛒" FontSize="64" HorizontalAlignment="Center" Foreground="#2A2A50" />
+        <TextBlock Text="{Binding PageTitle}" FontSize="24" FontWeight="SemiBold"
+                   Foreground="#E0E0FF" HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding StatusMessage}" FontSize="14" Foreground="#6060A0"
+                   HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="480" TextAlignment="Center" />
+    </StackPanel>
+</UserControl>

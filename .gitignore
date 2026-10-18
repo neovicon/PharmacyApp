@@ -1,0 +1,22 @@
+## Build and runtime output
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio / Rider / IDE cache
+.vs/
+.idea/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.launchSettings.json
+
+## Crash logs and dumps
+*.log
+*.dmp
+
+## OS generated files
+.DS_Store
+Thumbs.db

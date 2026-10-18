@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PharmacyApp.Desktop.ViewModels.Dashboard"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             x:Class="PharmacyApp.Desktop.Views.Dashboard.DashboardView"
+             x:DataType="vm:DashboardViewModel">
+
+    <Design.DataContext>
+        <vm:DashboardViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- Page header -->
+        <Border Grid.Row="0"
+                Background="#16162A"
+                BorderBrush="#2A2A45"
+                BorderThickness="0,0,0,1"
+                Padding="32,20">
+            <StackPanel Spacing="4">
+                <TextBlock Text="{Binding PageTitle}"
+                           FontSize="24"
+                           FontWeight="SemiBold"
+                           Foreground="#E0E0FF" />
+                <TextBlock Text="Overview of pharmacy operations"
+                           FontSize="13"
+                           Foreground="#6060A0" />
+            </StackPanel>
+        </Border>
+
+        <!-- Content -->
+        <StackPanel Grid.Row="1"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Spacing="16">
+            <TextBlock Text="⊞"
+                       FontSize="64"
+                       HorizontalAlignment="Center"
+                       Foreground="#2A2A50" />
+            <TextBlock Text="{Binding StatusMessage}"
+                       FontSize="15"
+                       Foreground="#6060A0"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       MaxWidth="480"
+                       TextAlignment="Center" />
+            <TextBlock Text="Business widgets will appear here once database persistence is implemented in Milestone 1."
+                       FontSize="12"
+                       Foreground="#404060"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       MaxWidth="420"
+                       TextAlignment="Center" />
+        </StackPanel>
+
+    </Grid>
+
+</UserControl>

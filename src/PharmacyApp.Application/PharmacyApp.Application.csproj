@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>PharmacyApp.Application</RootNamespace>
+    <AssemblyName>PharmacyApp.Application</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PharmacyApp.Domain\PharmacyApp.Domain.csproj" />
+  </ItemGroup>
+</Project>

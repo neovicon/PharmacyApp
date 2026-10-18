@@ -1,0 +1,120 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PharmacyApp.Desktop.ViewModels.Shell"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="PharmacyApp.Desktop.Views.Shell.ShellWindow"
+        x:DataType="vm:ShellViewModel"
+        Title="PharmacyApp"
+        Icon="/Assets/avalonia-logo.ico"
+        MinWidth="960"
+        MinHeight="600"
+        Width="1280"
+        Height="800">
+
+    <Design.DataContext>
+        <vm:ShellViewModel />
+    </Design.DataContext>
+
+    <Grid ColumnDefinitions="230,*">
+
+        <!-- ═══════════════════════════════════════ SIDEBAR ═══════════════════════════════════════ -->
+        <Border Grid.Column="0"
+                Background="#1C1C2E"
+                BorderBrush="#2A2A45"
+                BorderThickness="0,0,1,0">
+            <DockPanel>
+
+                <!-- App name / logo -->
+                <Border DockPanel.Dock="Top"
+                        Background="#14142B"
+                        Padding="20,24,20,20">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="💊"
+                                   FontSize="28"
+                                   HorizontalAlignment="Left" />
+                        <TextBlock Text="PharmacyApp"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="#E0E0FF" />
+                        <TextBlock Text="Pharmacy Management"
+                                   FontSize="11"
+                                   Foreground="#6060A0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Auth placeholder — reserved for Milestone 0.5 -->
+                <Border DockPanel.Dock="Bottom"
+                        Background="#14142B"
+                        BorderBrush="#2A2A45"
+                        BorderThickness="0,1,0,0"
+                        Padding="20,14">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="🔐 Authentication"
+                                   FontSize="12"
+                                   Foreground="#6060A0" />
+                        <TextBlock Text="Login — Milestone 0.5"
+                                   FontSize="11"
+                                   Foreground="#404070"
+                                   FontStyle="Italic" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Navigation items -->
+                <ScrollViewer DockPanel.Dock="Top"
+                              VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding NavItems}"
+                                  Margin="8,12">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:NavItemViewModel">
+                                <Button Command="{Binding NavigateCommand}"
+                                        Classes.active="{Binding IsSelected}"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Left"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Padding="12,10"
+                                        Margin="0,2"
+                                        CornerRadius="8"
+                                        Cursor="Hand">
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <TextBlock Text="{Binding IconGlyph}"
+                                                   FontSize="16"
+                                                   VerticalAlignment="Center"
+                                                   Width="22" />
+                                        <TextBlock Text="{Binding Label}"
+                                                   FontSize="14"
+                                                   Foreground="#A0A0C0"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <Button.Styles>
+                                        <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                            <Setter Property="Background" Value="#262645" />
+                                        </Style>
+                                        <Style Selector="Button.active /template/ ContentPresenter">
+                                            <Setter Property="Background" Value="#323260" />
+                                        </Style>
+                                        <Style Selector="Button.active TextBlock">
+                                            <Setter Property="Foreground" Value="#FFFFFF" />
+                                            <Setter Property="FontWeight" Value="SemiBold" />
+                                        </Style>
+                                    </Button.Styles>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+            </DockPanel>
+        </Border>
+
+        <!-- ═══════════════════════════════════════ CONTENT AREA ═════════════════════════════════ -->
+        <Grid Grid.Column="1"
+              Background="#0F0F1E">
+            <ContentControl Content="{Binding CurrentPage}" />
+        </Grid>
+
+    </Grid>
+
+</Window>
