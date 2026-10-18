@@ -113,19 +113,53 @@ Authentication is deliberately isolated to **Milestone 0.5** to ensure stability
    - Passwords and plaintext PINs are never stored, logged, or serialized.
 4. **Login Flow & Brute-Force Prevention**:
    - Generic login failure messages ("Invalid username or password") to prevent username enumeration.
-   - Exponential backoff / failed-attempt throttling after consecutive invalid tries.
 5. **Session & Current User Context**:
    - `ICurrentUserService` provides `UserId`, `Username`, `DisplayName`, `Role`, and `IsAuthenticated`.
    - Business views and use cases check `IsAuthenticated` before executing.
 6. **Idle Lock & Work Preservation**:
-   - Configurable idle timeout (e.g. 5–15 minutes).
-   - Locking displays a modal lock overlay requiring password/PIN re-entry; it does **not** reset ViewModels or destroy unsaved billing/form data.
+   - Configurable idle timeout (default 15 minutes, implemented via `IIdleTimerService`).
+   - Window input activity tracking (`PointerMoved`, `PointerPressed`, `KeyDown`) resets the inactivity countdown without invasive global system hooks.
+   - Locking displays a modal `LockOverlayView` requiring password re-entry; it preserves background ViewModels, navigation state, and form entries.
 7. **Storage Staging**:
-   - Milestone 0.5 authentication storage will be implemented directly with SQLite in Milestone 1 (or safely isolated via an interface if implemented in Milestone 0.5).
+   - Milestone 0.5 authentication storage is implemented directly with durable local SQLite (`Microsoft.Data.Sqlite`) in `{DataDirectory}/pharmacy.db`.
+   - WAL (Write-Ahead Logging) journal mode is enabled for durability and concurrent responsiveness.
 
 ---
 
-## 7. Persistence & Multi-Device Sync Boundaries (Milestone 1+)
+## 7. Milestone 0.5 Authentication & Session Foundation
+
+### Architecture & Layer Boundaries
+- **Domain**: `User` entity (Guid Id, lowercase username, displayName, BCrypt passwordHash, UserRole, isActive, CreatedAt, UpdatedAt, Version).
+- **Application**:
+  - `IPasswordHasher`: Password hashing and verification abstraction.
+  - `IUserRepository`: Persistent account repository contract.
+  - `ISessionManager` & `ICurrentUserService`: Session state machine (`Unauthenticated`, `Active`, `Locked`) and identity provider.
+  - `IIdleTimerService`: Inactivity timer contract with activity reset hooks.
+  - `PasswordPolicy`: Sensible policy enforcing $\ge 8$ chars, $\le 128$ chars, mix of letters and digits/symbols, and confirmation match.
+  - `CreateInitialAdminCommand` & `CreateInitialAdminCommandHandler`: First-run setup use case guarding against duplicate administrator creation.
+  - `LoginCommand` & `LoginCommandHandler`: Direct authentication use case returning generic error messages to eliminate username enumeration.
+- **Infrastructure**:
+  - `BCryptPasswordHasher`: BCrypt.Net-Next implementation with work factor 12 and unique cryptographic salts.
+  - `SqliteDatabaseInitializer`: Automatic schema creation and index verification on application startup.
+  - `SqliteUserRepository`: Parameterized SQL queries against SQLite database at `{DataDirectory}/pharmacy.db`.
+  - `SessionManager`: Thread-safe session coordinator masking user identity when locked or logged out. Re-verifies password against database on unlock.
+  - `IdleTimerService`: Deterministic timer consuming `IDateTimeProvider` for testability without real-time delays.
+- **Desktop**:
+  - `FirstRunSetupView` & `FirstRunSetupViewModel`: Displayed on first boot when 0 users exist.
+  - `LoginView` & `LoginViewModel`: Standard authentication screen.
+  - `LockOverlayView` & `LockOverlayViewModel`: Modal lock screen preserving background page state.
+  - `ShellViewModel`: Coordinates UI states (`FirstRunSetup`, `Login`, `Authenticated`, `Locked`).
+  - `ShellWindow`: Hooks user pointer and key activity to automatically refresh the idle timer.
+
+### Security Choices & Considerations
+1. **Password Hashing**: `BCrypt.Net-Next` (v4.2.0) with work factor 12. Generates unique 128-bit salt per password; resistant to rainbow tables and GPU brute-force attacks. Plaintext passwords are never logged or stored.
+2. **Local Storage**: `Microsoft.Data.Sqlite` (v10.0.13). Lightweight, self-contained, ACID-compliant local storage located in the OS application data folder (`~/.local/share/PharmacyApp` on Linux, `%LOCALAPPDATA%\PharmacyApp` on Windows). Never placed in the source tree.
+3. **No Information Leaks**: Login failures yield identical generic error messages ("Invalid username or password") regardless of whether the username exists, is inactive, or the password is wrong.
+4. **No Protected Shell Flash**: `ShellWindow.axaml` completely hides the protected navigation shell grid when unauthenticated or during initial setup.
+
+---
+
+## 8. Persistence & Multi-Device Sync Boundaries (Milestone 1+)
 
 1. **Entity Identifiers**:
    - All domain entities inherit `EntityBase` using non-empty client-generated `Guid` primary keys. This guarantees ID uniqueness across multiple client registers without requiring centralized auto-increment coordination.
@@ -139,7 +173,7 @@ Authentication is deliberately isolated to **Milestone 0.5** to ensure stability
 
 ---
 
-## 8. Barcode Scanner Handling Strategy (Milestone 2+)
+## 9. Barcode Scanner Handling Strategy (Milestone 2+)
 
 1. **Input Mode**:
    - Hardware USB/Bluetooth scanners operate in HID keyboard emulation mode, outputting characters followed by an `Enter` keystroke.
@@ -152,25 +186,29 @@ Authentication is deliberately isolated to **Milestone 0.5** to ensure stability
 
 ---
 
-## 9. Verification & Test Evidence
+## 10. Verification & Test Evidence
 
 ### Build Status
 ```bash
-dotnet build
+dotnet restore PharmacyApp.slnx
+dotnet build PharmacyApp.slnx --no-restore
 # 8 projects: 0 Warning(s), 0 Error(s)
 ```
 
 ### Automated Tests
 ```bash
 dotnet test PharmacyApp.slnx
-# Passed! - Failed: 0, Passed: 6  - PharmacyApp.Domain.Tests.dll
-# Passed! - Failed: 0, Passed: 4  - PharmacyApp.Application.Tests.dll
-# Passed! - Failed: 0, Passed: 6  - PharmacyApp.Infrastructure.Tests.dll
-# Passed! - Failed: 0, Passed: 26 - PharmacyApp.Desktop.Tests.dll
-# Total: 42 passed, 0 failed
+# Passed! - Failed: 0, Passed: 23 - PharmacyApp.Domain.Tests.dll
+# Passed! - Failed: 0, Passed: 33 - PharmacyApp.Application.Tests.dll
+# Passed! - Failed: 0, Passed: 34 - PharmacyApp.Infrastructure.Tests.dll
+# Passed! - Failed: 0, Passed: 38 - PharmacyApp.Desktop.Tests.dll
+# Total: 128 passed, 0 failed, 0 skipped
 ```
 
 ### Runtime Verification
+- Executed compiled binary under Linux Wayland/X11 (`DOTNET_ROOT=/home/daniel/.dotnet src/PharmacyApp.Desktop/bin/Debug/net10.0/PharmacyApp.Desktop`).
+- Process started cleanly, verified 0 existing users in `pharmacy.db`, and displayed `FirstRunSetupView` without any protected shell flicker.
+- Structured log entry written to `~/.local/share/PharmacyApp/Logs/pharmacy-20261018.log`.
 - Executed compiled binary under Linux Wayland/X11 (`DISPLAY=:0`).
 - Process started cleanly, registered all DI services, initialized Avalonia desktop lifetime, and wrote structured log entry:
   `2026-10-18 17:33:31.213 +05:45 [INF] PharmacyApp Desktop starting. Version=0.1.0.0 Environment=Development` to `~/.local/share/PharmacyApp/Logs/pharmacy-20261018.log`.

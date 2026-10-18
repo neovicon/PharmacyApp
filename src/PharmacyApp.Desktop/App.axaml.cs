@@ -4,17 +4,12 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using PharmacyApp.Desktop.ViewModels.Shell;
 using PharmacyApp.Desktop.Views.Shell;
+using PharmacyApp.Infrastructure.Persistence;
 
 namespace PharmacyApp.Desktop;
 
 public partial class App : Avalonia.Application
 {
-    /// <summary>
-    /// Set by Program.cs before Avalonia initializes so that the App and
-    /// ViewLocator can resolve services without a static service locator pattern.
-    /// This is an accepted pattern for desktop apps that bootstrap DI outside
-    /// the UI framework lifecycle.
-    /// </summary>
     public static IServiceProvider ServiceProvider { get; set; } = null!;
 
     public override void Initialize()
@@ -26,7 +21,14 @@ public partial class App : Avalonia.Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // Initialize durable SQLite database schema before UI presents
+            var dbInitializer = ServiceProvider.GetRequiredService<SqliteDatabaseInitializer>();
+            dbInitializer.InitializeAsync().GetAwaiter().GetResult();
+
+            // Resolve ShellViewModel and determine initial screen (First-Run Setup vs Login)
             ShellViewModel shellViewModel = ServiceProvider.GetRequiredService<ShellViewModel>();
+            shellViewModel.InitializeAsync().GetAwaiter().GetResult();
+
             desktop.MainWindow = new ShellWindow
             {
                 DataContext = shellViewModel,

@@ -1,0 +1,104 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PharmacyApp.Desktop.ViewModels.Auth"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             x:Class="PharmacyApp.Desktop.Views.Auth.LockOverlayView"
+             x:DataType="vm:LockOverlayViewModel"
+             Background="#D9080812">
+
+    <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
+        <Border Background="#1C1C30"
+                BorderBrush="#35355A"
+                BorderThickness="1"
+                CornerRadius="16"
+                Padding="36"
+                Width="380"
+                BoxShadow="0 16 48 #66000000">
+            <StackPanel Spacing="18">
+
+                <!-- Header -->
+                <StackPanel Spacing="6" HorizontalAlignment="Center">
+                    <TextBlock Text="🔒" FontSize="44" HorizontalAlignment="Center" />
+                    <TextBlock Text="Session Locked"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               Foreground="#FFFFFF"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding DisplayName}"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Foreground="#A29BFE"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding Username, StringFormat='@{0}'}"
+                               FontSize="11"
+                               Foreground="#6E6E90"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Error alert -->
+                <Border Background="#3D1824"
+                        BorderBrush="#8A2E44"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="10"
+                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock Text="{Binding ErrorMessage}"
+                               Foreground="#FF8095"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               HorizontalAlignment="Center" />
+                </Border>
+
+                <!-- Password field -->
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Password" FontSize="12" FontWeight="SemiBold" Foreground="#B0B0D0" />
+                    <TextBox Text="{Binding Password}"
+                             PasswordChar="•"
+                             PlaceholderText="Enter password to unlock"
+                             CornerRadius="8"
+                             IsEnabled="{Binding !IsBusy}" />
+                </StackPanel>
+
+                <!-- Action buttons -->
+                <StackPanel Spacing="8">
+                    <Button Command="{Binding UnlockCommand}"
+                            Content="Unlock Session"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Background="#4E44C4"
+                            Foreground="#FFFFFF"
+                            FontWeight="SemiBold"
+                            Padding="12"
+                            CornerRadius="8"
+                            IsEnabled="{Binding !IsBusy}">
+                        <Button.Styles>
+                            <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                <Setter Property="Background" Value="#6255E0" />
+                            </Style>
+                        </Button.Styles>
+                    </Button>
+
+                    <Button Command="{Binding LogoutCommand}"
+                            Content="Log Out"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Background="Transparent"
+                            Foreground="#8E8EA8"
+                            FontSize="12"
+                            Padding="8"
+                            IsEnabled="{Binding !IsBusy}">
+                        <Button.Styles>
+                            <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                <Setter Property="Background" Value="#252540" />
+                                <Setter Property="Foreground" Value="#FF8095" />
+                            </Style>
+                        </Button.Styles>
+                    </Button>
+                </StackPanel>
+
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

@@ -11,109 +11,170 @@
         MinWidth="960"
         MinHeight="600"
         Width="1280"
-        Height="800">
+        Height="800"
+        Background="#0E0E1B">
 
     <Design.DataContext>
         <vm:ShellViewModel />
     </Design.DataContext>
 
-    <Grid ColumnDefinitions="230,*">
+    <Grid>
 
-        <!-- ═══════════════════════════════════════ SIDEBAR ═══════════════════════════════════════ -->
-        <Border Grid.Column="0"
-                Background="#1C1C2E"
-                BorderBrush="#2A2A45"
-                BorderThickness="0,0,1,0">
-            <DockPanel>
+        <!-- ═══════════════════════════════════════ MAIN SHELL ═══════════════════════════════════════ -->
+        <Grid ColumnDefinitions="230,*"
+              IsVisible="{Binding AuthViewModel, Converter={x:Static ObjectConverters.IsNull}}">
 
-                <!-- App name / logo -->
-                <Border DockPanel.Dock="Top"
-                        Background="#14142B"
-                        Padding="20,24,20,20">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="💊"
-                                   FontSize="28"
-                                   HorizontalAlignment="Left" />
-                        <TextBlock Text="PharmacyApp"
-                                   FontSize="16"
-                                   FontWeight="SemiBold"
-                                   Foreground="#E0E0FF" />
-                        <TextBlock Text="Pharmacy Management"
-                                   FontSize="11"
-                                   Foreground="#6060A0" />
-                    </StackPanel>
-                </Border>
+            <!-- ────────────────────────────────── SIDEBAR ────────────────────────────────── -->
+            <Border Grid.Column="0"
+                    Background="#1C1C2E"
+                    BorderBrush="#2A2A45"
+                    BorderThickness="0,0,1,0">
+                <DockPanel>
 
-                <!-- Auth placeholder — reserved for Milestone 0.5 -->
-                <Border DockPanel.Dock="Bottom"
-                        Background="#14142B"
-                        BorderBrush="#2A2A45"
-                        BorderThickness="0,1,0,0"
-                        Padding="20,14">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="🔐 Authentication"
-                                   FontSize="12"
-                                   Foreground="#6060A0" />
-                        <TextBlock Text="Login — Milestone 0.5"
-                                   FontSize="11"
-                                   Foreground="#404070"
-                                   FontStyle="Italic" />
-                    </StackPanel>
-                </Border>
+                    <!-- App logo & title -->
+                    <Border DockPanel.Dock="Top"
+                            Background="#14142B"
+                            Padding="20,24,20,20">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="💊"
+                                       FontSize="28"
+                                       HorizontalAlignment="Left" />
+                            <TextBlock Text="PharmacyApp"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="#E0E0FF" />
+                            <TextBlock Text="Pharmacy Management"
+                                       FontSize="11"
+                                       Foreground="#6060A0" />
+                        </StackPanel>
+                    </Border>
 
-                <!-- Navigation items -->
-                <ScrollViewer DockPanel.Dock="Top"
-                              VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding NavItems}"
-                                  Margin="8,12">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="vm:NavItemViewModel">
-                                <Button Command="{Binding NavigateCommand}"
-                                        Classes.active="{Binding IsSelected}"
-                                        HorizontalAlignment="Stretch"
-                                        HorizontalContentAlignment="Left"
+                    <!-- User Profile & Session Controls -->
+                    <Border DockPanel.Dock="Bottom"
+                            Background="#14142B"
+                            BorderBrush="#2A2A45"
+                            BorderThickness="0,1,0,0"
+                            Padding="16,14">
+                        <Grid RowDefinitions="Auto,Auto">
+                            <StackPanel Grid.Row="0" Spacing="4">
+                                <TextBlock Text="{Binding UserDisplayName}"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="#E0E0FF" />
+                                <Border Background="#25254A"
+                                        CornerRadius="4"
+                                        Padding="6,2"
+                                        HorizontalAlignment="Left">
+                                    <TextBlock Text="{Binding UserRoleName}"
+                                               FontSize="10"
+                                               FontWeight="SemiBold"
+                                               Foreground="#A29BFE" />
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Lock and Logout buttons -->
+                            <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,10,0,0">
+                                <Button Grid.Column="0"
+                                        Command="{Binding LockCommand}"
                                         Background="Transparent"
-                                        BorderThickness="0"
-                                        Padding="12,10"
-                                        Margin="0,2"
-                                        CornerRadius="8"
-                                        Cursor="Hand">
-                                    <StackPanel Orientation="Horizontal" Spacing="12">
-                                        <TextBlock Text="{Binding IconGlyph}"
-                                                   FontSize="16"
-                                                   VerticalAlignment="Center"
-                                                   Width="22" />
-                                        <TextBlock Text="{Binding Label}"
-                                                   FontSize="14"
-                                                   Foreground="#A0A0C0"
-                                                   VerticalAlignment="Center" />
+                                        Padding="6,6"
+                                        Margin="0,0,4,0"
+                                        CornerRadius="6"
+                                        ToolTip.Tip="Lock session (idle or manual)">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                        <TextBlock Text="🔒" FontSize="12" />
+                                        <TextBlock Text="Lock" FontSize="11" Foreground="#A0A0C0" />
                                     </StackPanel>
                                     <Button.Styles>
                                         <Style Selector="Button:pointerover /template/ ContentPresenter">
-                                            <Setter Property="Background" Value="#262645" />
-                                        </Style>
-                                        <Style Selector="Button.active /template/ ContentPresenter">
-                                            <Setter Property="Background" Value="#323260" />
-                                        </Style>
-                                        <Style Selector="Button.active TextBlock">
-                                            <Setter Property="Foreground" Value="#FFFFFF" />
-                                            <Setter Property="FontWeight" Value="SemiBold" />
+                                            <Setter Property="Background" Value="#252545" />
                                         </Style>
                                     </Button.Styles>
                                 </Button>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
 
-            </DockPanel>
-        </Border>
+                                <Button Grid.Column="1"
+                                        Command="{Binding LogoutCommand}"
+                                        Background="Transparent"
+                                        Padding="6,6"
+                                        Margin="4,0,0,0"
+                                        CornerRadius="6"
+                                        ToolTip.Tip="Sign out of application">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                        <TextBlock Text="🚪" FontSize="12" />
+                                        <TextBlock Text="Logout" FontSize="11" Foreground="#FF8095" />
+                                    </StackPanel>
+                                    <Button.Styles>
+                                        <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                            <Setter Property="Background" Value="#3D1824" />
+                                        </Style>
+                                    </Button.Styles>
+                                </Button>
+                            </Grid>
+                        </Grid>
+                    </Border>
 
-        <!-- ═══════════════════════════════════════ CONTENT AREA ═════════════════════════════════ -->
-        <Grid Grid.Column="1"
-              Background="#0F0F1E">
-            <ContentControl Content="{Binding CurrentPage}" />
+                    <!-- Navigation items -->
+                    <ScrollViewer DockPanel.Dock="Top"
+                                  VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding NavItems}"
+                                      Margin="8,12">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:NavItemViewModel">
+                                    <Button Command="{Binding NavigateCommand}"
+                                            Classes.active="{Binding IsSelected}"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Left"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Padding="12,10"
+                                            Margin="0,2"
+                                            CornerRadius="8">
+                                        <StackPanel Orientation="Horizontal" Spacing="12">
+                                            <TextBlock Text="{Binding IconGlyph}"
+                                                       FontSize="16"
+                                                       VerticalAlignment="Center"
+                                                       Width="22" />
+                                            <TextBlock Text="{Binding Label}"
+                                                       FontSize="14"
+                                                       Foreground="#A0A0C0"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                        <Button.Styles>
+                                            <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                                <Setter Property="Background" Value="#262645" />
+                                            </Style>
+                                            <Style Selector="Button.active /template/ ContentPresenter">
+                                                <Setter Property="Background" Value="#323260" />
+                                            </Style>
+                                            <Style Selector="Button.active TextBlock">
+                                                <Setter Property="Foreground" Value="#FFFFFF" />
+                                                <Setter Property="FontWeight" Value="SemiBold" />
+                                            </Style>
+                                        </Button.Styles>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                </DockPanel>
+            </Border>
+
+            <!-- ────────────────────────────────── MAIN CONTENT ────────────────────────────── -->
+            <Grid Grid.Column="1"
+                  Background="#0F0F1E">
+                <ContentControl Content="{Binding CurrentPage}" />
+            </Grid>
+
         </Grid>
+
+        <!-- ═══════════════════════════════════════ AUTH SCREEN (Setup / Login) ════════════════════ -->
+        <ContentControl Content="{Binding AuthViewModel}"
+                        IsVisible="{Binding AuthViewModel, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+        <!-- ═══════════════════════════════════════ MODAL LOCK OVERLAY ═════════════════════════════ -->
+        <ContentControl Content="{Binding LockOverlayViewModel}"
+                        IsVisible="{Binding LockOverlayViewModel, Converter={x:Static ObjectConverters.IsNotNull}}" />
 
     </Grid>
 

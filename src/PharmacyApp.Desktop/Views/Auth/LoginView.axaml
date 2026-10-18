@@ -1,0 +1,89 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PharmacyApp.Desktop.ViewModels.Auth"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             x:Class="PharmacyApp.Desktop.Views.Auth.LoginView"
+             x:DataType="vm:LoginViewModel"
+             Background="#0E0E1B">
+
+    <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
+        <Border Background="#1A1A2E"
+                BorderBrush="#2D2D4E"
+                BorderThickness="1"
+                CornerRadius="16"
+                Padding="36"
+                Width="400"
+                BoxShadow="0 8 32 #33000000">
+            <StackPanel Spacing="18">
+
+                <!-- Header -->
+                <StackPanel Spacing="6" HorizontalAlignment="Center">
+                    <TextBlock Text="💊" FontSize="44" HorizontalAlignment="Center" />
+                    <TextBlock Text="PharmacyApp"
+                               FontSize="22"
+                               FontWeight="Bold"
+                               Foreground="#FFFFFF"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="Sign in to access pharmacy operations"
+                               FontSize="12"
+                               Foreground="#8E8EA8"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Error alert -->
+                <Border Background="#3D1824"
+                        BorderBrush="#8A2E44"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="12"
+                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock Text="{Binding ErrorMessage}"
+                               Foreground="#FF8095"
+                               FontSize="12"
+                               TextWrapping="Wrap" />
+                </Border>
+
+                <!-- Form fields -->
+                <StackPanel Spacing="12">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Username" FontSize="12" FontWeight="SemiBold" Foreground="#B0B0D0" />
+                        <TextBox Text="{Binding Username}"
+                                 PlaceholderText="Enter your username"
+                                 CornerRadius="8"
+                                 IsEnabled="{Binding !IsBusy}" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Password" FontSize="12" FontWeight="SemiBold" Foreground="#B0B0D0" />
+                        <TextBox Text="{Binding Password}"
+                                 PasswordChar="•"
+                                 PlaceholderText="Enter your password"
+                                 CornerRadius="8"
+                                 IsEnabled="{Binding !IsBusy}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Sign in button -->
+                <Button Command="{Binding LoginCommand}"
+                        Content="Sign In"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        Background="#4E44C4"
+                        Foreground="#FFFFFF"
+                        FontWeight="SemiBold"
+                        Padding="12"
+                        CornerRadius="8"
+                        IsEnabled="{Binding !IsBusy}">
+                    <Button.Styles>
+                        <Style Selector="Button:pointerover /template/ ContentPresenter">
+                            <Setter Property="Background" Value="#6255E0" />
+                        </Style>
+                    </Button.Styles>
+                </Button>
+
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

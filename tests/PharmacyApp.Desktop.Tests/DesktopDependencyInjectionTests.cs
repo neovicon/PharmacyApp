@@ -22,16 +22,24 @@ using Xunit;
 
 namespace PharmacyApp.Desktop.Tests;
 
-public class DesktopDependencyInjectionTests
+public class DesktopDependencyInjectionTests : IDisposable
 {
+    private readonly IsolatedDesktopTestPathProvider _pathProvider = new();
     private readonly ServiceProvider _provider;
 
     public DesktopDependencyInjectionTests()
     {
         var services = new ServiceCollection();
         services.AddInfrastructure();
+        services.AddSingleton<IAppPathProvider>(_pathProvider);
         services.AddDesktopServices();
         _provider = services.BuildServiceProvider();
+    }
+
+    public void Dispose()
+    {
+        _provider.Dispose();
+        _pathProvider.Dispose();
     }
 
     [Fact]
@@ -75,5 +83,10 @@ public class DesktopDependencyInjectionTests
         Assert.NotNull(_provider.GetRequiredService<SalesView>());
         Assert.NotNull(_provider.GetRequiredService<ReportsView>());
         Assert.NotNull(_provider.GetRequiredService<SettingsView>());
+
+        // Auth Views
+        Assert.NotNull(_provider.GetRequiredService<PharmacyApp.Desktop.Views.Auth.FirstRunSetupView>());
+        Assert.NotNull(_provider.GetRequiredService<PharmacyApp.Desktop.Views.Auth.LoginView>());
+        Assert.NotNull(_provider.GetRequiredService<PharmacyApp.Desktop.Views.Auth.LockOverlayView>());
     }
 }

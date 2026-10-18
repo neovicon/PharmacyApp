@@ -1,5 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using PharmacyApp.Application.Abstractions;
+using PharmacyApp.Application.Authentication;
+using PharmacyApp.Application.Authentication.Commands;
+using PharmacyApp.Application.Common;
+using PharmacyApp.Infrastructure.Persistence;
+using PharmacyApp.Infrastructure.Security;
 using PharmacyApp.Infrastructure.Services;
 using Serilog;
 
@@ -11,12 +16,51 @@ namespace PharmacyApp.Infrastructure;
 /// </summary>
 public static class InfrastructureServiceExtensions
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string? customConnectionString = null)
     {
-        // Path provider must be a singleton: the directories are created in the constructor
-        // and we want one consistent answer throughout the process lifetime.
+        // Core providers
         services.AddSingleton<IAppPathProvider, AppPathProvider>();
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
+
+        // Security
+        services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+
+        // SQLite connection string
+        services.AddSingleton(sp =>
+        {
+            if (!string.IsNullOrEmpty(customConnectionString))
+                return customConnectionString;
+
+            var pathProvider = sp.GetRequiredService<IAppPathProvider>();
+            string dbPath = Path.Combine(pathProvider.DataDirectory, "pharmacy.db");
+            return $"Data Source={dbPath};Cache=Shared;";
+        });
+
+        // SQLite schema initializer
+        services.AddSingleton(sp =>
+        {
+            string connectionString = sp.GetRequiredService<string>();
+            return new SqliteDatabaseInitializer(connectionString);
+        });
+
+        // User repository
+        services.AddSingleton<IUserRepository>(sp =>
+        {
+            string connectionString = sp.GetRequiredService<string>();
+            return new SqliteUserRepository(connectionString);
+        });
+
+        // Session manager (singleton serving both ISessionManager and ICurrentUserService)
+        services.AddSingleton<SessionManager>();
+        services.AddSingleton<ISessionManager>(sp => sp.GetRequiredService<SessionManager>());
+        services.AddSingleton<ICurrentUserService>(sp => sp.GetRequiredService<SessionManager>());
+
+        // Idle timer service
+        services.AddSingleton<IIdleTimerService, IdleTimerService>();
+
+        // Direct command handlers (no MediatR)
+        services.AddTransient<ICommandHandler<CreateInitialAdminCommand, Guid>, CreateInitialAdminCommandHandler>();
+        services.AddTransient<ICommandHandler<LoginCommand, UserSessionDto>, LoginCommandHandler>();
 
         return services;
     }

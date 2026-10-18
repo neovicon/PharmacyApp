@@ -8,6 +8,7 @@ using PharmacyApp.Desktop.ViewModels.Reports;
 using PharmacyApp.Desktop.ViewModels.Sales;
 using PharmacyApp.Desktop.ViewModels.Settings;
 using PharmacyApp.Desktop.ViewModels.Shell;
+using PharmacyApp.Desktop.Views.Auth;
 using PharmacyApp.Desktop.Views.Dashboard;
 using PharmacyApp.Desktop.Views.Inventory;
 using PharmacyApp.Desktop.Views.Medicines;
@@ -22,13 +23,6 @@ namespace PharmacyApp.Desktop;
 /// <summary>
 /// Registers all Desktop-layer services (ViewModels, Views, Navigation)
 /// into the DI container.
-///
-/// Lifetime choices:
-/// - ShellViewModel: Singleton — there is exactly one shell for the process lifetime.
-/// - NavigationService: Singleton — it holds CurrentPage state.
-/// - Page ViewModels: Singleton — preserves page state across navigation.
-///   Change to Transient if a page should always start fresh.
-/// - Views: Transient — re-created each time ViewLocator resolves them.
 /// </summary>
 public static class DesktopServiceExtensions
 {
@@ -54,6 +48,9 @@ public static class DesktopServiceExtensions
 
         // Views — registered so ViewLocator can resolve them from DI
         services.AddTransient<ShellWindow>();
+        services.AddTransient<FirstRunSetupView>();
+        services.AddTransient<LoginView>();
+        services.AddTransient<LockOverlayView>();
         services.AddTransient<DashboardView>();
         services.AddTransient<MedicinesView>();
         services.AddTransient<InventoryView>();
