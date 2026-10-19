@@ -82,4 +82,27 @@ public class LockOverlayViewModelTests
         Assert.Equal(string.Empty, vm.Password);
         Assert.Null(vm.ErrorMessage);
     }
+
+    [Fact]
+    public async Task UnlockCommand_WhenSessionManagerThrows_ClearsPasswordAndDisplaysGenericErrorWithoutExposingException()
+    {
+        var session = new UserSessionDto(Guid.NewGuid(), "admin", "System Administrator", UserRole.Admin);
+        _sessionManager.StartSession(session);
+        _sessionManager.LockSession();
+        _sessionManager.ThrowOnUnlock = true;
+
+        bool unlockedCallbackFired = false;
+        var vm = new LockOverlayViewModel(_sessionManager, () => unlockedCallbackFired = true)
+        {
+            Password = "entered_secret"
+        };
+
+        await vm.UnlockCommand.ExecuteAsync(null);
+
+        Assert.Equal(string.Empty, vm.Password);
+        Assert.DoesNotContain("SensitiveUnlockError", vm.ErrorMessage);
+        Assert.Equal("Unlock service is temporarily unavailable. Please try again.", vm.ErrorMessage);
+        Assert.False(unlockedCallbackFired);
+        Assert.False(vm.IsBusy);
+    }
 }

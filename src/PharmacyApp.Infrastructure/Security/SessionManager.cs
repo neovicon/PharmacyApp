@@ -142,6 +142,9 @@ public sealed class SessionManager : ISessionManager
         if (string.IsNullOrEmpty(password))
             return Result.Failure("Password is required.");
 
+        if (password.Length > PasswordPolicy.MaxLength)
+            return Result.Failure("Invalid password.");
+
         var user = await _userRepository.GetByIdAsync(currentUser.UserId, cancellationToken);
         if (user is null || !user.IsActive)
             return Result.Failure("User account is inactive or no longer exists.");

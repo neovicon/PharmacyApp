@@ -53,15 +53,45 @@ public class LoginViewModelTests
         Assert.True(completed);
         Assert.Same(session, _sessionManager.StartedSession);
     }
+
+    [Fact]
+    public async Task LoginCommand_WhenHandlerThrows_ClearsPasswordAndDisplaysGenericErrorWithoutExposingException()
+    {
+        _handler.ThrowOnHandle = true;
+        bool completed = false;
+
+        var vm = new LoginViewModel(_handler, _sessionManager, () => completed = true)
+        {
+            Username = "admin",
+            Password = "SecretPassword123!"
+        };
+
+        await vm.LoginCommand.ExecuteAsync(null);
+
+        // Password MUST be cleared even when an exception occurs
+        Assert.Equal(string.Empty, vm.Password);
+        // Error message must NOT contain internal exception details or stack traces
+        Assert.DoesNotContain("SensitiveInternalDatabaseException", vm.ErrorMessage);
+        Assert.Equal("Authentication service is temporarily unavailable. Please try again.", vm.ErrorMessage);
+        Assert.False(completed);
+        Assert.False(vm.IsBusy);
+    }
 }
 
 internal sealed class StubLoginHandler : ICommandHandler<LoginCommand, UserSessionDto>
 {
+    public bool ThrowOnHandle { get; set; }
+
     public Result<UserSessionDto> ResultToReturn { get; set; } =
         Result.Success(new UserSessionDto(Guid.NewGuid(), "user", "User", UserRole.Cashier));
 
     public Task<Result<UserSessionDto>> HandleAsync(LoginCommand command, CancellationToken cancellationToken = default)
     {
+        if (ThrowOnHandle)
+        {
+            throw new InvalidOperationException("SensitiveInternalDatabaseException: Disk failure on /var/data/pharmacy.db");
+        }
+
         return Task.FromResult(ResultToReturn);
     }
 }

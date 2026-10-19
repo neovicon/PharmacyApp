@@ -167,6 +167,15 @@ internal sealed class StubUserRepository : IUserRepository
         UsersById[user.Id] = user;
         return Task.CompletedTask;
     }
+
+    public Task<bool> TryCreateInitialAdminAsync(User user, CancellationToken cancellationToken = default)
+    {
+        if (UsersById.Count > 0)
+            return Task.FromResult(false);
+
+        UsersById[user.Id] = user;
+        return Task.FromResult(true);
+    }
 }
 
 internal sealed class StubPasswordHasher : IPasswordHasher

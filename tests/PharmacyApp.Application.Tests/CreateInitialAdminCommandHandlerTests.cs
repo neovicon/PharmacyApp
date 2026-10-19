@@ -52,6 +52,21 @@ public class CreateInitialAdminCommandHandlerTests
         Assert.Contains("Initial setup has already been completed", result.Error);
     }
 
+    [Fact]
+    public async Task HandleAsync_WhenRaceOccursDuringCreation_ReturnsFailureGracefully()
+    {
+        // Simulate a scenario where HasAnyUsersAsync returned false, but by the time
+        // TryCreateInitialAdminAsync runs, another concurrent request completed setup.
+        _userRepository.SimulateAdminCreationRace = true;
+
+        var command = new CreateInitialAdminCommand("raceadmin", "Race Admin", "AdminPass123!", "AdminPass123!");
+
+        var result = await _handler.HandleAsync(command);
+
+        Assert.True(result.IsFailure);
+        Assert.Contains("Initial setup has already been completed", result.Error);
+    }
+
     [Theory]
     [InlineData("", "Display", "ValidPass1!")]
     [InlineData("  ", "Display", "ValidPass1!")]
@@ -127,6 +142,22 @@ public class TestUserRepository : IUserRepository
             _users[index] = user;
         }
         return Task.CompletedTask;
+    }
+
+    public bool SimulateAdminCreationRace { get; set; }
+
+    public Task<bool> TryCreateInitialAdminAsync(User adminUser, CancellationToken cancellationToken = default)
+    {
+        lock (_users)
+        {
+            if (SimulateAdminCreationRace || _users.Count > 0)
+            {
+                return Task.FromResult(false);
+            }
+
+            _users.Add(adminUser);
+            return Task.FromResult(true);
+        }
     }
 }
 

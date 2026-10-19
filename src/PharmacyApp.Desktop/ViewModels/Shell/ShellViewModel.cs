@@ -52,6 +52,9 @@ public sealed partial class ShellViewModel : ViewModelBase, IDisposable
 
     public ObservableCollection<NavItemViewModel> NavItems { get; }
 
+    public bool IsShellVisible => ShellState is ShellState.Authenticated or ShellState.Locked;
+    public bool IsShellInteractive => ShellState == ShellState.Authenticated;
+
     public string UserDisplayName => _sessionManager.DisplayName;
     public string UserRoleName => _sessionManager.Role.ToString();
 
@@ -97,6 +100,9 @@ public sealed partial class ShellViewModel : ViewModelBase, IDisposable
             ShellState = ShellState.Authenticated;
             _idleTimer.Start();
         }
+
+        OnPropertyChanged(nameof(IsShellVisible));
+        OnPropertyChanged(nameof(IsShellInteractive));
     }
 
     public void RecordActivity()
@@ -125,6 +131,8 @@ public sealed partial class ShellViewModel : ViewModelBase, IDisposable
         AuthViewModel = null;
         _idleTimer.Start();
         NotifyUserProperties();
+        OnPropertyChanged(nameof(IsShellVisible));
+        OnPropertyChanged(nameof(IsShellInteractive));
     }
 
     private void OnUnlocked()
@@ -133,6 +141,8 @@ public sealed partial class ShellViewModel : ViewModelBase, IDisposable
         LockOverlayViewModel = null;
         _idleTimer.Start();
         NotifyUserProperties();
+        OnPropertyChanged(nameof(IsShellVisible));
+        OnPropertyChanged(nameof(IsShellInteractive));
     }
 
     private void OnNavigationChanged(object? sender, ViewModelBase page)
@@ -143,35 +153,61 @@ public sealed partial class ShellViewModel : ViewModelBase, IDisposable
 
     private void OnSessionStateChanged(object? sender, SessionStateChangedEventArgs e)
     {
-        switch (e.State)
+        RunOnUi(() =>
         {
-            case SessionState.Active:
-                ShellState = ShellState.Authenticated;
-                AuthViewModel = null;
-                LockOverlayViewModel = null;
-                _idleTimer.Start();
-                NotifyUserProperties();
-                break;
+            switch (e.State)
+            {
+                case SessionState.Active:
+                    ShellState = ShellState.Authenticated;
+                    AuthViewModel = null;
+                    LockOverlayViewModel = null;
+                    _idleTimer.Start();
+                    NotifyUserProperties();
+                    break;
 
-            case SessionState.Locked:
-                ShellState = ShellState.Locked;
-                _idleTimer.Stop();
-                LockOverlayViewModel = new LockOverlayViewModel(_sessionManager, OnUnlocked);
-                break;
+                case SessionState.Locked:
+                    ShellState = ShellState.Locked;
+                    _idleTimer.Stop();
+                    LockOverlayViewModel = new LockOverlayViewModel(_sessionManager, OnUnlocked);
+                    break;
 
-            case SessionState.Unauthenticated:
-                _idleTimer.Stop();
-                ShellState = ShellState.Login;
-                LockOverlayViewModel = null;
-                AuthViewModel = new LoginViewModel(_loginHandler, _sessionManager, OnAuthenticated);
-                NotifyUserProperties();
-                break;
-        }
+                case SessionState.Unauthenticated:
+                    _idleTimer.Stop();
+                    ShellState = ShellState.Login;
+                    LockOverlayViewModel = null;
+                    AuthViewModel = new LoginViewModel(_loginHandler, _sessionManager, OnAuthenticated);
+                    NotifyUserProperties();
+                    _navigation.NavigateTo<DashboardViewModel>();
+                    break;
+            }
+
+            OnPropertyChanged(nameof(IsShellVisible));
+            OnPropertyChanged(nameof(IsShellInteractive));
+        });
     }
 
     private void OnInactivityDetected(object? sender, EventArgs e)
     {
         _sessionManager.LockSession();
+    }
+
+    private static void RunOnUi(Action action)
+    {
+        try
+        {
+            if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+            {
+                action();
+            }
+            else
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(action);
+            }
+        }
+        catch
+        {
+            action();
+        }
     }
 
     private void NotifyUserProperties()

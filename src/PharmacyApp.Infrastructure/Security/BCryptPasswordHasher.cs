@@ -1,4 +1,5 @@
 using PharmacyApp.Application.Abstractions;
+using PharmacyApp.Application.Authentication;
 
 namespace PharmacyApp.Infrastructure.Security;
 
@@ -17,12 +18,18 @@ public sealed class BCryptPasswordHasher : IPasswordHasher
         if (string.IsNullOrEmpty(password))
             throw new ArgumentException("Password cannot be null or empty.", nameof(password));
 
+        if (password.Length > PasswordPolicy.MaxLength)
+            throw new ArgumentException($"Password cannot exceed {PasswordPolicy.MaxLength} characters.", nameof(password));
+
         return BCrypt.Net.BCrypt.EnhancedHashPassword(password, WorkFactor);
     }
 
     public bool VerifyPassword(string password, string passwordHash)
     {
         if (string.IsNullOrEmpty(password) || string.IsNullOrEmpty(passwordHash))
+            return false;
+
+        if (password.Length > PasswordPolicy.MaxLength)
             return false;
 
         try

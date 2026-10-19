@@ -86,4 +86,15 @@ public class LoginCommandHandlerTests
         Assert.True(result.IsFailure);
         Assert.Equal("Invalid username or password.", result.Error);
     }
+
+    [Fact]
+    public async Task HandleAsync_WithOversizedPassword_ReturnsGenericFailureWithoutAttemptingVerification()
+    {
+        string oversizedPassword = new string('x', 200);
+        var command = new LoginCommand("admin", oversizedPassword);
+        var result = await _handler.HandleAsync(command);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("Invalid username or password.", result.Error);
+    }
 }

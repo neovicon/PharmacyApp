@@ -116,6 +116,68 @@ public class SqliteUserRepositoryTests : IDisposable
         Assert.Equal("persistent_user", retrieved.Username);
         Assert.Equal("Persistent", retrieved.DisplayName);
     }
+
+    [Fact]
+    public async Task TryCreateInitialAdminAsync_WhenDatabaseIsEmpty_SucceedsAndInsertsSingleRow()
+    {
+        var admin = User.Create("initial_admin", "Admin", "valid_hash", UserRole.Admin, DateTimeOffset.UtcNow);
+
+        bool success = await _repository.TryCreateInitialAdminAsync(admin);
+
+        Assert.True(success);
+        var retrieved = await _repository.GetByIdAsync(admin.Id);
+        Assert.NotNull(retrieved);
+        Assert.Equal("initial_admin", retrieved.Username);
+    }
+
+    [Fact]
+    public async Task TryCreateInitialAdminAsync_WhenDatabaseAlreadyHasUser_ReturnsFalseAndDoesNotInsert()
+    {
+        var firstUser = User.Create("first_user", "First", "valid_hash", UserRole.Admin, DateTimeOffset.UtcNow);
+        await _repository.AddAsync(firstUser);
+
+        var secondAdmin = User.Create("second_admin", "Second", "valid_hash", UserRole.Admin, DateTimeOffset.UtcNow);
+        bool success = await _repository.TryCreateInitialAdminAsync(secondAdmin);
+
+        Assert.False(success);
+        var retrieved = await _repository.GetByIdAsync(secondAdmin.Id);
+        Assert.Null(retrieved);
+    }
+
+    [Fact]
+    public async Task TryCreateInitialAdminAsync_ConcurrentCallsAcrossConnections_ExactlyOneSucceeds()
+    {
+        // Simulate 10 concurrent requests/processes racing to create the initial admin
+        int concurrentCallers = 10;
+        var tasks = new Task<bool>[concurrentCallers];
+
+        for (int i = 0; i < concurrentCallers; i++)
+        {
+            int index = i;
+            tasks[i] = Task.Run(async () =>
+            {
+                var repo = new SqliteUserRepository(_connectionString);
+                var candidate = User.Create($"admin_{index}", $"Admin {index}", $"hash_{index}", UserRole.Admin, DateTimeOffset.UtcNow);
+                return await repo.TryCreateInitialAdminAsync(candidate);
+            });
+        }
+
+        bool[] results = await Task.WhenAll(tasks);
+
+        int successCount = results.Count(r => r);
+        int failureCount = results.Count(r => !r);
+
+        Assert.Equal(1, successCount);
+        Assert.Equal(concurrentCallers - 1, failureCount);
+
+        // Verify database contains exactly 1 user
+        await using var connection = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(1) FROM Users;";
+        long totalUsers = (long)(await cmd.ExecuteScalarAsync() ?? 0L);
+        Assert.Equal(1L, totalUsers);
+    }
 }
 
 internal sealed class IsolatedTestPathProvider : IAppPathProvider, IDisposable

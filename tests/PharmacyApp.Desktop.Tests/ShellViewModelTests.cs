@@ -163,4 +163,51 @@ public class ShellViewModelTests : IDisposable
         Assert.IsType<PharmacyApp.Desktop.ViewModels.Auth.LoginViewModel>(_shellViewModel.AuthViewModel);
         Assert.Equal(string.Empty, _shellViewModel.UserDisplayName);
     }
+
+    [Fact]
+    public void InitialState_BeforeAuthentication_ShellIsNotVisibleAndNotInteractive()
+    {
+        // Must fail-closed: prior to authentication or setup completion,
+        // the main shell grid cannot be visible or interactive.
+        Assert.False(_shellViewModel.IsShellVisible);
+        Assert.False(_shellViewModel.IsShellInteractive);
+    }
+
+    [Fact]
+    public void LockCommand_WhenActive_ShellIsVisibleInDimmedState_ButNotInteractive()
+    {
+        var session = new PharmacyApp.Application.Authentication.UserSessionDto(
+            Guid.NewGuid(), "admin", "Administrator", PharmacyApp.Domain.Enums.UserRole.Admin);
+        _sessionManager.StartSession(session);
+
+        Assert.True(_shellViewModel.IsShellVisible);
+        Assert.True(_shellViewModel.IsShellInteractive);
+
+        _shellViewModel.LockCommand.Execute(null);
+
+        // While locked, the shell stays visible in background (preserving work),
+        // but MUST NOT be interactive (blocks keyboard/focus interaction).
+        Assert.True(_shellViewModel.IsShellVisible);
+        Assert.False(_shellViewModel.IsShellInteractive);
+    }
+
+    [Fact]
+    public void LogoutCommand_ResetsNavigationToDashboard_PreventingCrossUserStaleUI()
+    {
+        var session = new PharmacyApp.Application.Authentication.UserSessionDto(
+            Guid.NewGuid(), "admin", "Administrator", PharmacyApp.Domain.Enums.UserRole.Admin);
+        _sessionManager.StartSession(session);
+
+        // User navigates away from Dashboard to another section
+        _navigationService.NavigateTo<MedicinesViewModel>();
+        Assert.IsType<MedicinesViewModel>(_shellViewModel.CurrentPage);
+
+        // User logs out
+        _shellViewModel.LogoutCommand.Execute(null);
+
+        // Current page must reset to Dashboard to prevent next user seeing previous screen
+        Assert.IsType<DashboardViewModel>(_shellViewModel.CurrentPage);
+        Assert.False(_shellViewModel.IsShellVisible);
+        Assert.False(_shellViewModel.IsShellInteractive);
+    }
 }

@@ -31,6 +31,32 @@ public class FirstRunSetupViewModelTests
         await vm.CreateAdministratorCommand.ExecuteAsync(null);
 
         Assert.Equal("Password does not meet complexity requirements.", vm.ErrorMessage);
+        Assert.Equal(string.Empty, vm.Password);
+        Assert.Equal(string.Empty, vm.ConfirmPassword);
+        Assert.False(completed);
+        Assert.False(vm.IsBusy);
+    }
+
+    [Fact]
+    public async Task CreateAdministratorCommand_WhenHandlerThrows_ClearsPasswordsAndDisplaysGenericErrorWithoutExposingException()
+    {
+        _handler.ThrowOnHandle = true;
+        bool completed = false;
+
+        var vm = new FirstRunSetupViewModel(_handler, _sessionManager, () => completed = true)
+        {
+            Username = "admin",
+            DisplayName = "Administrator",
+            Password = "SecretPassword123!",
+            ConfirmPassword = "SecretPassword123!"
+        };
+
+        await vm.CreateAdministratorCommand.ExecuteAsync(null);
+
+        Assert.Equal(string.Empty, vm.Password);
+        Assert.Equal(string.Empty, vm.ConfirmPassword);
+        Assert.DoesNotContain("SensitiveInternalSetupException", vm.ErrorMessage);
+        Assert.Equal("Administrator setup failed due to an unexpected error. Please try again.", vm.ErrorMessage);
         Assert.False(completed);
         Assert.False(vm.IsBusy);
     }
@@ -66,16 +92,25 @@ public class FirstRunSetupViewModelTests
 
 internal sealed class StubCreateAdminHandler : ICommandHandler<CreateInitialAdminCommand, Guid>
 {
+    public bool ThrowOnHandle { get; set; }
+
     public Result<Guid> ResultToReturn { get; set; } = Result.Success(Guid.NewGuid());
 
     public Task<Result<Guid>> HandleAsync(CreateInitialAdminCommand command, CancellationToken cancellationToken = default)
     {
+        if (ThrowOnHandle)
+        {
+            throw new InvalidOperationException("SensitiveInternalSetupException: DB file locked");
+        }
+
         return Task.FromResult(ResultToReturn);
     }
 }
 
 internal sealed class StubSessionManager : ISessionManager
 {
+    public bool ThrowOnUnlock { get; set; }
+
     public SessionState State { get; set; } = SessionState.Unauthenticated;
     public UserSessionDto? CurrentUser => StartedSession;
     public Guid UserId => StartedSession?.UserId ?? Guid.Empty;
@@ -106,6 +141,11 @@ internal sealed class StubSessionManager : ISessionManager
 
     public Task<Result> UnlockSessionAsync(string password, CancellationToken cancellationToken = default)
     {
+        if (ThrowOnUnlock)
+        {
+            throw new InvalidOperationException("SensitiveUnlockError: DB lock failure");
+        }
+
         if (password == "correct_pass")
         {
             Locked = false;

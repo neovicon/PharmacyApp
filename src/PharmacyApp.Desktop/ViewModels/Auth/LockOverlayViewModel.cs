@@ -44,8 +44,10 @@ public sealed partial class LockOverlayViewModel : ViewModelBase
 
         try
         {
-            var result = await _sessionManager.UnlockSessionAsync(Password);
+            string enteredPassword = Password;
             Password = string.Empty;
+
+            var result = await _sessionManager.UnlockSessionAsync(enteredPassword);
 
             if (result.IsFailure)
             {
@@ -55,12 +57,13 @@ public sealed partial class LockOverlayViewModel : ViewModelBase
 
             _onUnlocked.Invoke();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            ErrorMessage = $"Unlock failed: {ex.Message}";
+            ErrorMessage = "Unlock service is temporarily unavailable. Please try again.";
         }
         finally
         {
+            Password = string.Empty;
             IsBusy = false;
         }
     }

@@ -50,10 +50,9 @@ public sealed partial class LoginViewModel : ViewModelBase
         try
         {
             var command = new LoginCommand(Username, Password);
-            var result = await _loginHandler.HandleAsync(command);
-
-            // Always clear the plaintext password from the viewmodel property
             Password = string.Empty;
+
+            var result = await _loginHandler.HandleAsync(command);
 
             if (result.IsFailure)
             {
@@ -64,12 +63,13 @@ public sealed partial class LoginViewModel : ViewModelBase
             _sessionManager.StartSession(result.Value);
             _onLoginSuccessful.Invoke();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            ErrorMessage = $"Authentication failed unexpectedly: {ex.Message}";
+            ErrorMessage = "Authentication service is temporarily unavailable. Please try again.";
         }
         finally
         {
+            Password = string.Empty;
             IsBusy = false;
         }
     }

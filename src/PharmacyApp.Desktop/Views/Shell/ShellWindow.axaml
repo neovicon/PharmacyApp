@@ -22,7 +22,8 @@
 
         <!-- ═══════════════════════════════════════ MAIN SHELL ═══════════════════════════════════════ -->
         <Grid ColumnDefinitions="230,*"
-              IsVisible="{Binding AuthViewModel, Converter={x:Static ObjectConverters.IsNull}}">
+              IsVisible="{Binding IsShellVisible}"
+              IsEnabled="{Binding IsShellInteractive}">
 
             <!-- ────────────────────────────────── SIDEBAR ────────────────────────────────── -->
             <Border Grid.Column="0"

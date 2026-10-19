@@ -32,4 +32,10 @@ public interface IUserRepository
     /// Updates an existing user account.
     /// </summary>
     Task UpdateAsync(User user, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Atomically persists the initial administrator account if and only if no users exist in storage.
+    /// Returns true if the user was successfully created as the first user; false if any user already exists.
+    /// </summary>
+    Task<bool> TryCreateInitialAdminAsync(User adminUser, CancellationToken cancellationToken = default);
 }

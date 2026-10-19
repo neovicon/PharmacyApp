@@ -57,6 +57,9 @@ public sealed partial class FirstRunSetupViewModel : ViewModelBase
         try
         {
             var command = new CreateInitialAdminCommand(Username, DisplayName, Password, ConfirmPassword);
+            Password = string.Empty;
+            ConfirmPassword = string.Empty;
+
             var result = await _createAdminHandler.HandleAsync(command);
 
             if (result.IsFailure)
@@ -72,19 +75,17 @@ public sealed partial class FirstRunSetupViewModel : ViewModelBase
                 DisplayName: DisplayName.Trim(),
                 Role: UserRole.Admin);
 
-            // Clear sensitive input fields from memory
-            Password = string.Empty;
-            ConfirmPassword = string.Empty;
-
             _sessionManager.StartSession(session);
             _onSetupCompleted.Invoke();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            ErrorMessage = $"Setup failed unexpectedly: {ex.Message}";
+            ErrorMessage = "Administrator setup failed due to an unexpected error. Please try again.";
         }
         finally
         {
+            Password = string.Empty;
+            ConfirmPassword = string.Empty;
             IsBusy = false;
         }
     }

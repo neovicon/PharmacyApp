@@ -25,6 +25,11 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, UserSess
             return Result.Failure<UserSessionDto>(GenericErrorMessage);
         }
 
+        if (command.Password.Length > PasswordPolicy.MaxLength)
+        {
+            return Result.Failure<UserSessionDto>(GenericErrorMessage);
+        }
+
         var user = await _userRepository.GetByUsernameAsync(command.Username.Trim(), cancellationToken);
         if (user is null || !user.IsActive)
         {

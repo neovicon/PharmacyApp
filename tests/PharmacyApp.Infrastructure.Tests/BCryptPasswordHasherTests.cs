@@ -64,4 +64,31 @@ public class BCryptPasswordHasherTests
 
         Assert.False(isValid);
     }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(null)]
+    public void HashPassword_WithEmptyOrNull_ThrowsArgumentException(string? password)
+    {
+        Assert.Throws<ArgumentException>(() => _hasher.HashPassword(password!));
+    }
+
+    [Fact]
+    public void HashPassword_ExceedingMaxLength_ThrowsArgumentException()
+    {
+        string oversizedPassword = new string('A', 129);
+        var ex = Assert.Throws<ArgumentException>(() => _hasher.HashPassword(oversizedPassword));
+        Assert.Contains("cannot exceed 128", ex.Message);
+    }
+
+    [Fact]
+    public void VerifyPassword_ExceedingMaxLength_ReturnsFalseWithoutException()
+    {
+        string validHash = _hasher.HashPassword("ValidPassword123!");
+        string oversizedPassword = new string('A', 1000);
+
+        bool isValid = _hasher.VerifyPassword(oversizedPassword, validHash);
+
+        Assert.False(isValid);
+    }
 }

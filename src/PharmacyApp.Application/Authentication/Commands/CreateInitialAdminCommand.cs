@@ -60,7 +60,11 @@ public sealed class CreateInitialAdminCommandHandler : ICommandHandler<CreateIni
             role: UserRole.Admin,
             now: now);
 
-        await _userRepository.AddAsync(adminUser, cancellationToken);
+        bool created = await _userRepository.TryCreateInitialAdminAsync(adminUser, cancellationToken);
+        if (!created)
+        {
+            return Result.Failure<Guid>("Initial setup has already been completed. Ordinary login is required.");
+        }
 
         return Result.Success(adminUser.Id);
     }
