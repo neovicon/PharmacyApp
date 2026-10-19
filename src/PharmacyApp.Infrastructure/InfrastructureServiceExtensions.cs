@@ -58,6 +58,9 @@ public static class InfrastructureServiceExtensions
         // Idle timer service
         services.AddSingleton<IIdleTimerService, IdleTimerService>();
 
+        // Login failed-attempt rate limiter & progressive cooldown throttle
+        services.AddSingleton<ILoginThrottleService, LoginThrottleService>();
+
         // Direct command handlers (no MediatR)
         services.AddTransient<ICommandHandler<CreateInitialAdminCommand, Guid>, CreateInitialAdminCommandHandler>();
         services.AddTransient<ICommandHandler<LoginCommand, UserSessionDto>, LoginCommandHandler>();

@@ -1,3 +1,4 @@
+using PharmacyApp.Application.Abstractions;
 using PharmacyApp.Application.Authentication.Commands;
 using PharmacyApp.Domain.Entities;
 using PharmacyApp.Domain.Enums;
@@ -9,11 +10,12 @@ public class LoginCommandHandlerTests
 {
     private readonly TestUserRepository _userRepository = new();
     private readonly TestPasswordHasher _passwordHasher = new();
+    private readonly TestLoginThrottleService _throttleService = new();
     private readonly LoginCommandHandler _handler;
 
     public LoginCommandHandlerTests()
     {
-        _handler = new LoginCommandHandler(_userRepository, _passwordHasher);
+        _handler = new LoginCommandHandler(_userRepository, _passwordHasher, _throttleService);
     }
 
     [Fact]
@@ -32,6 +34,7 @@ public class LoginCommandHandlerTests
         Assert.Equal("pharmacist", result.Value.Username);
         Assert.Equal("Jane Doe", result.Value.DisplayName);
         Assert.Equal(UserRole.Pharmacist, result.Value.Role);
+        Assert.True(_throttleService.ResetCalled);
     }
 
     [Fact]
@@ -42,6 +45,7 @@ public class LoginCommandHandlerTests
 
         Assert.True(result.IsFailure);
         Assert.Equal("Invalid username or password.", result.Error);
+        Assert.Equal(1, _throttleService.FailedAttempts);
     }
 
     [Fact]
@@ -56,6 +60,7 @@ public class LoginCommandHandlerTests
 
         Assert.True(result.IsFailure);
         Assert.Equal("Invalid username or password.", result.Error);
+        Assert.Equal(1, _throttleService.FailedAttempts);
     }
 
     [Fact]
@@ -71,6 +76,7 @@ public class LoginCommandHandlerTests
 
         Assert.True(result.IsFailure);
         Assert.Equal("Invalid username or password.", result.Error);
+        Assert.Equal(1, _throttleService.FailedAttempts);
     }
 
     [Theory]
@@ -85,6 +91,7 @@ public class LoginCommandHandlerTests
 
         Assert.True(result.IsFailure);
         Assert.Equal("Invalid username or password.", result.Error);
+        Assert.Equal(1, _throttleService.FailedAttempts);
     }
 
     [Fact]
@@ -96,5 +103,56 @@ public class LoginCommandHandlerTests
 
         Assert.True(result.IsFailure);
         Assert.Equal("Invalid username or password.", result.Error);
+        Assert.Equal(1, _throttleService.FailedAttempts);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenThrottled_RejectsImmediatelyWithoutCheckingRepository()
+    {
+        _throttleService.SetThrottled(TimeSpan.FromSeconds(24.5));
+
+        var command = new LoginCommand("admin", "AnyPass123!");
+        var result = await _handler.HandleAsync(command);
+
+        Assert.True(result.IsFailure);
+        Assert.Contains("Too many failed login attempts", result.Error);
+        Assert.Contains("25 seconds", result.Error);
+        // Does not record further failed attempts while already in lockout
+        Assert.Equal(0, _throttleService.FailedAttempts);
+    }
+}
+
+public class TestLoginThrottleService : ILoginThrottleService
+{
+    private int _failedAttempts;
+    private TimeSpan _retryAfter = TimeSpan.Zero;
+    private bool _isThrottled;
+
+    public int FailedAttempts => _failedAttempts;
+    public bool ResetCalled { get; private set; }
+
+    public bool IsThrottled(out TimeSpan retryAfter)
+    {
+        retryAfter = _retryAfter;
+        return _isThrottled;
+    }
+
+    public void RecordFailedAttempt()
+    {
+        _failedAttempts++;
+    }
+
+    public void Reset()
+    {
+        ResetCalled = true;
+        _failedAttempts = 0;
+        _isThrottled = false;
+        _retryAfter = TimeSpan.Zero;
+    }
+
+    public void SetThrottled(TimeSpan retryAfter)
+    {
+        _isThrottled = true;
+        _retryAfter = retryAfter;
     }
 }

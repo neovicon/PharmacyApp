@@ -34,6 +34,7 @@ public class InfrastructureServiceExtensionsTests
         var sessionManager = provider.GetService<ISessionManager>();
         var currentUserService = provider.GetService<ICurrentUserService>();
         var idleTimer = provider.GetService<IIdleTimerService>();
+        var throttleService = provider.GetService<ILoginThrottleService>();
         var dbInitializer = provider.GetService<PharmacyApp.Infrastructure.Persistence.SqliteDatabaseInitializer>();
 
         Assert.NotNull(passwordHasher);
@@ -42,6 +43,7 @@ public class InfrastructureServiceExtensionsTests
         Assert.NotNull(currentUserService);
         Assert.Same(sessionManager, currentUserService);
         Assert.NotNull(idleTimer);
+        Assert.NotNull(throttleService);
         Assert.NotNull(dbInitializer);
 
         // Verify Command Handlers
