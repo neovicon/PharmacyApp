@@ -168,6 +168,9 @@ internal sealed class StubUserRepository : IUserRepository
         return Task.CompletedTask;
     }
 
+    public Task<IReadOnlyList<User>> ListAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<User>>(UsersById.Values.ToList());
+
     public Task<bool> TryCreateInitialAdminAsync(User user, CancellationToken cancellationToken = default)
     {
         if (UsersById.Count > 0)

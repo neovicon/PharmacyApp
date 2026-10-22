@@ -1,19 +1,436 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:PharmacyApp.Desktop.ViewModels.Settings"
+             xmlns:enums="using:PharmacyApp.Domain.Enums"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              x:Class="PharmacyApp.Desktop.Views.Settings.SettingsView"
              x:DataType="vm:SettingsViewModel">
-    <Design.DataContext>
-        <vm:SettingsViewModel />
-    </Design.DataContext>
-    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16">
-        <TextBlock Text="⚙" FontSize="64" HorizontalAlignment="Center" Foreground="#2A2A50" />
-        <TextBlock Text="{Binding PageTitle}" FontSize="24" FontWeight="SemiBold"
-                   Foreground="#E0E0FF" HorizontalAlignment="Center" />
-        <TextBlock Text="{Binding StatusMessage}" FontSize="14" Foreground="#6060A0"
-                   HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="480" TextAlignment="Center" />
-    </StackPanel>
+
+    <Grid>
+        <!-- Main Layout -->
+        <Grid RowDefinitions="Auto,*" Margin="24">
+
+            <!-- ═══════════════════════════════════════ HEADER ═══════════════════════════════════════ -->
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+                <StackPanel Grid.Column="0" Spacing="4">
+                    <TextBlock Text="System Administration &amp; Settings" FontSize="24" FontWeight="Bold" Foreground="#FFFFFF" />
+                    <TextBlock Text="Manage staff accounts, WAL-safe SQLite backups, pharmacy store profile, and diagnostics."
+                               FontSize="13" Foreground="#8E8EA0" />
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        Command="{Binding LoadAllCommand}"
+                        Background="#262645"
+                        Foreground="#E0E0FF"
+                        Padding="14,8"
+                        CornerRadius="8">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="🔄" FontSize="12" />
+                        <TextBlock Text="Refresh" FontSize="13" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- ═══════════════════════════════════════ TABS ═══════════════════════════════════════ -->
+            <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}">
+
+                <!-- ────────────────────────────────────────── TAB 1: STAFF MANAGEMENT ────────────────────────────────────────── -->
+                <TabItem Header="👥 Staff Management">
+                    <Grid RowDefinitions="Auto,Auto,*" Margin="0,16,0,0">
+
+                        <!-- Staff Top Bar -->
+                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,14">
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding Users.Count, StringFormat='Registered Staff Accounts ({0})'}"
+                                       FontSize="15" FontWeight="SemiBold" Foreground="#DDDDF0" VerticalAlignment="Center" />
+
+                            <Button Grid.Column="1"
+                                    Command="{Binding OpenAddUserModalCommand}"
+                                    IsEnabled="{Binding IsAdmin}"
+                                    Background="#5E5CE6"
+                                    Foreground="#FFFFFF"
+                                    FontWeight="SemiBold"
+                                    Padding="14,8"
+                                    CornerRadius="8">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="➕" FontSize="12" />
+                                    <TextBlock Text="Add Staff Member" FontSize="13" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <!-- Status / Feedback Banner -->
+                        <Border Grid.Row="1"
+                                IsVisible="{Binding StaffStatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                Background="#1A2A20"
+                                BorderBrush="#255530"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12,8"
+                                Margin="0,0,0,14">
+                            <TextBlock Text="{Binding StaffStatusMessage}" Foreground="#4ADE80" FontSize="13" />
+                        </Border>
+
+                        <!-- Staff ListBox -->
+                        <Border Grid.Row="2" Background="#161628" BorderBrush="#262645" BorderThickness="1" CornerRadius="10" ClipToBounds="True">
+                            <Grid RowDefinitions="Auto,*">
+                                <!-- Column Headers -->
+                                <Border Grid.Row="0" Background="#1C1C36" Padding="16,10" BorderBrush="#262645" BorderThickness="0,0,0,1">
+                                    <Grid ColumnDefinitions="140,160,110,90,140,*">
+                                        <TextBlock Grid.Column="0" Text="USERNAME" FontSize="11" FontWeight="Bold" Foreground="#8888AA" />
+                                        <TextBlock Grid.Column="1" Text="DISPLAY NAME" FontSize="11" FontWeight="Bold" Foreground="#8888AA" />
+                                        <TextBlock Grid.Column="2" Text="ROLE" FontSize="11" FontWeight="Bold" Foreground="#8888AA" />
+                                        <TextBlock Grid.Column="3" Text="STATUS" FontSize="11" FontWeight="Bold" Foreground="#8888AA" />
+                                        <TextBlock Grid.Column="4" Text="CREATED" FontSize="11" FontWeight="Bold" Foreground="#8888AA" />
+                                        <TextBlock Grid.Column="5" Text="ACTIONS" FontSize="11" FontWeight="Bold" Foreground="#8888AA" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- User Items -->
+                                <ListBox Grid.Row="1" ItemsSource="{Binding Users}" Background="Transparent">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid ColumnDefinitions="140,160,110,90,140,*" Margin="4,2">
+                                                <TextBlock Grid.Column="0" Text="{Binding Username}" FontWeight="SemiBold" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="1" Text="{Binding DisplayName}" Foreground="#C0C0D8" VerticalAlignment="Center" />
+                                                <Border Grid.Column="2" Background="#252545" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Role}" FontSize="11" Foreground="#A78BFA" FontWeight="SemiBold" />
+                                                </Border>
+                                                <Border Grid.Column="3" Background="#182E1E" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                    <TextBlock Text="Active" FontSize="11" Foreground="#4ADE80" FontWeight="SemiBold" />
+                                                </Border>
+                                                <TextBlock Grid.Column="4" Text="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd}'}" Foreground="#8888AA" FontSize="12" VerticalAlignment="Center" />
+
+                                                <!-- Action Buttons -->
+                                                <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                                    <Button Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).OpenResetPasswordModalCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            Background="#2A2A48"
+                                                            Foreground="#C0C0E0"
+                                                            FontSize="11"
+                                                            Padding="10,4"
+                                                            CornerRadius="6">
+                                                        <TextBlock Text="Reset Password" />
+                                                    </Button>
+                                                    <Button Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).ToggleUserActiveCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            Background="#322028"
+                                                            Foreground="#FF8080"
+                                                            FontSize="11"
+                                                            Padding="10,4"
+                                                            CornerRadius="6">
+                                                        <TextBlock Text="Toggle Active" />
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
+                <!-- ────────────────────────────────────────── TAB 2: DATABASE & BACKUPS ────────────────────────────────────────── -->
+                <TabItem Header="💾 Database &amp; Backups">
+                    <ScrollViewer Margin="0,16,0,0">
+                        <StackPanel Spacing="20">
+
+                            <!-- Status Cards -->
+                            <Grid ColumnDefinitions="*,*">
+                                <!-- Live Database Card -->
+                                <Border Grid.Column="0" Background="#161628" BorderBrush="#262645" BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,0,10,0">
+                                    <StackPanel Spacing="10">
+                                        <TextBlock Text="ACTIVE SQLITE DATABASE" FontSize="12" FontWeight="Bold" Foreground="#8888AA" />
+                                        <TextBlock Text="{Binding DatabasePath}" FontSize="12" Foreground="#A0A0C0" TextWrapping="Wrap" />
+
+                                        <Grid ColumnDefinitions="*,*,*" Margin="0,6,0,0">
+                                            <StackPanel Grid.Column="0" Spacing="2">
+                                                <TextBlock Text="File Size" FontSize="11" Foreground="#707090" />
+                                                <TextBlock Text="{Binding DatabaseSizeFormatted}" FontSize="15" FontWeight="Bold" Foreground="#FFFFFF" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Spacing="2">
+                                                <TextBlock Text="Journal Mode" FontSize="11" Foreground="#707090" />
+                                                <Border Background="#1C2D3D" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left">
+                                                    <TextBlock Text="{Binding JournalMode}" FontSize="12" FontWeight="Bold" Foreground="#38BDF8" />
+                                                </Border>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Spacing="2">
+                                                <TextBlock Text="Foreign Keys" FontSize="11" Foreground="#707090" />
+                                                <TextBlock Text="{Binding ForeignKeysStatus}" FontSize="12" FontWeight="Bold" Foreground="#4ADE80" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Backup Status Card -->
+                                <Border Grid.Column="1" Background="#161628" BorderBrush="#262645" BorderThickness="1" CornerRadius="12" Padding="18" Margin="10,0,0,0">
+                                    <StackPanel Spacing="10">
+                                        <TextBlock Text="BACKUP VAULT SUMMARY" FontSize="12" FontWeight="Bold" Foreground="#8888AA" />
+                                        <Grid ColumnDefinitions="*,*,*" Margin="0,6,0,0">
+                                            <StackPanel Grid.Column="0" Spacing="2">
+                                                <TextBlock Text="Total Backups" FontSize="11" Foreground="#707090" />
+                                                <TextBlock Text="{Binding BackupCount}" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Spacing="2">
+                                                <TextBlock Text="Vault Size" FontSize="11" Foreground="#707090" />
+                                                <TextBlock Text="{Binding TotalBackupSizeFormatted}" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Spacing="2">
+                                                <TextBlock Text="Latest Backup" FontSize="11" Foreground="#707090" />
+                                                <TextBlock Text="{Binding LastBackupTimeFormatted}" FontSize="12" FontWeight="SemiBold" Foreground="#DDDDF0" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <!-- Backup Action Card -->
+                            <Border Background="#1C1C36" BorderBrush="#32325E" BorderThickness="1" CornerRadius="12" Padding="20">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" Spacing="6">
+                                        <TextBlock Text="Verified WAL-Safe Snapshot" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF" />
+                                        <TextBlock Text="Creates an atomic snapshot using SQLite VACUUM INTO, tests PRAGMA integrity_check, and verifies row-by-row authentication data."
+                                                   FontSize="13" Foreground="#9595B5" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding BackupStatusMessage}"
+                                                   IsVisible="{Binding BackupStatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                                   FontSize="12" FontWeight="SemiBold" Foreground="#38BDF8" Margin="0,4,0,0" />
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1"
+                                            Command="{Binding CreateBackupNowCommand}"
+                                            IsEnabled="{Binding !IsBackupInProgress}"
+                                            Background="#10B981"
+                                            Foreground="#FFFFFF"
+                                            FontWeight="Bold"
+                                            Padding="18,10"
+                                            CornerRadius="8"
+                                            VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="🛡" FontSize="14" />
+                                            <TextBlock Text="Create Backup Now" FontSize="13" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <!-- Backups History List -->
+                            <Border Background="#161628" BorderBrush="#262645" BorderThickness="1" CornerRadius="10" ClipToBounds="True">
+                                <StackPanel>
+                                    <Border Background="#1C1C36" Padding="16,10" BorderBrush="#262645" BorderThickness="0,0,0,1">
+                                        <Grid ColumnDefinitions="*,120,160">
+                                            <TextBlock Grid.Column="0" Text="BACKUP FILENAME" FontSize="11" FontWeight="Bold" Foreground="#8888AA" />
+                                            <TextBlock Grid.Column="1" Text="SIZE" FontSize="11" FontWeight="Bold" Foreground="#8888AA" />
+                                            <TextBlock Grid.Column="2" Text="TIMESTAMP" FontSize="11" FontWeight="Bold" Foreground="#8888AA" HorizontalAlignment="Right" />
+                                        </Grid>
+                                    </Border>
+
+                                    <ListBox ItemsSource="{Binding Backups}" Background="Transparent" MaxHeight="220">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid ColumnDefinitions="*,120,160" Margin="4,2">
+                                                    <TextBlock Grid.Column="0" Text="{Binding FileName}" FontWeight="SemiBold" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding SizeBytes, StringFormat='{}{0} B'}" Foreground="#A0A0C0" VerticalAlignment="Center" />
+                                                    <TextBlock Grid.Column="2" Text="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Foreground="#8888AA" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </StackPanel>
+                            </Border>
+
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- ────────────────────────────────────────── TAB 3: STORE PROFILE ────────────────────────────────────────── -->
+                <TabItem Header="🏪 Store Profile">
+                    <ScrollViewer Margin="0,16,0,0">
+                        <Border Background="#161628" BorderBrush="#262645" BorderThickness="1" CornerRadius="12" Padding="24" MaxWidth="720" HorizontalAlignment="Left">
+                            <StackPanel Spacing="16">
+                                <TextBlock Text="Pharmacy Profile &amp; Preferences" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF" />
+
+                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" Margin="0,6,0,0">
+                                    <!-- Store Name -->
+                                    <StackPanel Grid.Row="0" Grid.Column="0" Spacing="6" Margin="0,0,10,14">
+                                        <TextBlock Text="Store / Pharmacy Name *" FontSize="12" Foreground="#8888AA" />
+                                        <TextBox Text="{Binding StoreName}" Background="#1C1C36" Foreground="#FFFFFF" CornerRadius="6" />
+                                    </StackPanel>
+
+                                    <!-- Phone -->
+                                    <StackPanel Grid.Row="0" Grid.Column="1" Spacing="6" Margin="10,0,0,14">
+                                        <TextBlock Text="Contact Phone Number" FontSize="12" Foreground="#8888AA" />
+                                        <TextBox Text="{Binding StorePhone}" Background="#1C1C36" Foreground="#FFFFFF" CornerRadius="6" />
+                                    </StackPanel>
+
+                                    <!-- Address -->
+                                    <StackPanel Grid.Row="1" Grid.Column="0" Spacing="6" Margin="0,0,10,14">
+                                        <TextBlock Text="Store Address" FontSize="12" Foreground="#8888AA" />
+                                        <TextBox Text="{Binding StoreAddress}" Background="#1C1C36" Foreground="#FFFFFF" CornerRadius="6" />
+                                    </StackPanel>
+
+                                    <!-- PAN / Tax -->
+                                    <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6" Margin="10,0,0,14">
+                                        <TextBlock Text="Tax / PAN Registration Number" FontSize="12" Foreground="#8888AA" />
+                                        <TextBox Text="{Binding TaxPanNumber}" Background="#1C1C36" Foreground="#FFFFFF" CornerRadius="6" />
+                                    </StackPanel>
+
+                                    <!-- Receipt Footer Note -->
+                                    <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6" Margin="0,0,0,14">
+                                        <TextBlock Text="Receipt Footer Note" FontSize="12" Foreground="#8888AA" />
+                                        <TextBox Text="{Binding ReceiptFooterMessage}" Background="#1C1C36" Foreground="#FFFFFF" CornerRadius="6" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Inactivity Timeout -->
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Auto-Lock Inactivity Timeout (Minutes)" FontSize="12" Foreground="#8888AA" />
+                                    <NumericUpDown Value="{Binding AutoLockMinutes}" Minimum="0" Maximum="120" Increment="5" Background="#1C1C36" Foreground="#FFFFFF" CornerRadius="6" Width="180" HorizontalAlignment="Left" />
+                                    <TextBlock Text="Set to 0 to disable automatic lock on idle." FontSize="11" Foreground="#606088" />
+                                </StackPanel>
+
+                                <!-- Status Feedback -->
+                                <TextBlock Text="{Binding ProfileStatusMessage}"
+                                           IsVisible="{Binding ProfileStatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                           Foreground="#4ADE80" FontSize="13" FontWeight="SemiBold" />
+
+                                <Button Command="{Binding SaveStoreProfileCommand}"
+                                        Background="#5E5CE6"
+                                        Foreground="#FFFFFF"
+                                        FontWeight="Bold"
+                                        Padding="20,10"
+                                        CornerRadius="8"
+                                        HorizontalAlignment="Left"
+                                        Margin="0,8,0,0">
+                                    <TextBlock Text="Save Store Profile" FontSize="13" />
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- ────────────────────────────────────────── TAB 4: SYSTEM INFO ────────────────────────────────────────── -->
+                <TabItem Header="ℹ️ System Diagnostics">
+                    <ScrollViewer Margin="0,16,0,0">
+                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" MaxWidth="800" HorizontalAlignment="Left">
+                            <!-- Software Info -->
+                            <Border Grid.Row="0" Grid.Column="0" Background="#161628" BorderBrush="#262645" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,10,14">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="APPLICATION ENVIRONMENT" FontSize="12" FontWeight="Bold" Foreground="#8888AA" />
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Text="App Version: 1.0.0 (Offline-First)" Foreground="#FFFFFF" FontSize="13" />
+                                        <TextBlock Text="{Binding DotNetVersion, StringFormat='Runtime: {0}'}" Foreground="#C0C0D8" FontSize="12" />
+                                        <TextBlock Text="{Binding Architecture, StringFormat='Architecture: {0}'}" Foreground="#C0C0D8" FontSize="12" />
+                                        <TextBlock Text="Architecture: Clean Architecture (Domain, Application, Infrastructure, Desktop)" Foreground="#707090" FontSize="11" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- OS Info -->
+                            <Border Grid.Row="0" Grid.Column="1" Background="#161628" BorderBrush="#262645" BorderThickness="1" CornerRadius="12" Padding="20" Margin="10,0,0,14">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="HOST PLATFORM" FontSize="12" FontWeight="Bold" Foreground="#8888AA" />
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Text="{Binding OperatingSystem, StringFormat='Operating System: {0}'}" Foreground="#FFFFFF" FontSize="13" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding MemoryUsage, StringFormat='Process Memory: {0}'}" Foreground="#C0C0D8" FontSize="12" />
+                                        <TextBlock Text="{Binding Uptime, StringFormat='Application Uptime: {0}'}" Foreground="#C0C0D8" FontSize="12" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Storage Info -->
+                            <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="#161628" BorderBrush="#262645" BorderThickness="1" CornerRadius="12" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="STORAGE &amp; RESILIENCE ARCHITECTURE" FontSize="12" FontWeight="Bold" Foreground="#8888AA" />
+                                    <TextBlock Text="• SQLite Engine: WAL (Write-Ahead Logging) mode with shared cache and 5000ms busy timeout." Foreground="#A0A0C0" FontSize="12" />
+                                    <TextBlock Text="• Foreign Key Enforcement: PRAGMA foreign_keys = ON enforced across all active connections." Foreground="#A0A0C0" FontSize="12" />
+                                    <TextBlock Text="• Immutable Ledgers: Stock adjustments are recorded in an append-only transaction ledger." Foreground="#A0A0C0" FontSize="12" />
+                                    <TextBlock Text="• Backup Isolation: VACUUM INTO creates online, non-blocking snapshots verified with PRAGMA integrity_check." Foreground="#A0A0C0" FontSize="12" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </ScrollViewer>
+                </TabItem>
+
+            </TabControl>
+        </Grid>
+
+        <!-- ═══════════════════════════════════════ ADD USER MODAL ═══════════════════════════════════════ -->
+        <Border IsVisible="{Binding IsAddUserModalOpen}" Background="#80000000">
+            <Border Background="#1C1C36" BorderBrush="#323260" BorderThickness="1" CornerRadius="12" Padding="24" Width="440" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="Add Staff Account" FontSize="18" FontWeight="Bold" Foreground="#FFFFFF" />
+
+                    <!-- Username -->
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Username *" FontSize="12" Foreground="#8888AA" />
+                        <TextBox Text="{Binding NewUsername}" Background="#161628" Foreground="#FFFFFF" CornerRadius="6" />
+                    </StackPanel>
+
+                    <!-- Display Name -->
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Display Name *" FontSize="12" Foreground="#8888AA" />
+                        <TextBox Text="{Binding NewDisplayName}" Background="#161628" Foreground="#FFFFFF" CornerRadius="6" />
+                    </StackPanel>
+
+                    <!-- Password -->
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Temporary Password *" FontSize="12" Foreground="#8888AA" />
+                        <TextBox Text="{Binding NewPassword}" PasswordChar="●" Background="#161628" Foreground="#FFFFFF" CornerRadius="6" />
+                        <TextBlock Text="Minimum 8 chars with uppercase, lowercase, and digit." FontSize="11" Foreground="#707090" />
+                    </StackPanel>
+
+                    <!-- Error Banner -->
+                    <TextBlock Text="{Binding AddUserErrorMessage}"
+                               IsVisible="{Binding AddUserErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                               Foreground="#FF5555" FontSize="12" TextWrapping="Wrap" />
+
+                    <!-- Buttons -->
+                    <Grid ColumnDefinitions="*,*" Margin="0,10,0,0">
+                        <Button Grid.Column="0" Command="{Binding CloseAddUserModalCommand}" Background="#252542" Foreground="#C0C0E0" Padding="12,8" CornerRadius="8" HorizontalAlignment="Stretch" Margin="0,0,6,0">
+                            <TextBlock Text="Cancel" HorizontalAlignment="Center" />
+                        </Button>
+                        <Button Grid.Column="1" Command="{Binding SaveNewUserCommand}" Background="#5E5CE6" Foreground="#FFFFFF" FontWeight="Bold" Padding="12,8" CornerRadius="8" HorizontalAlignment="Stretch" Margin="6,0,0,0">
+                            <TextBlock Text="Create User" HorizontalAlignment="Center" />
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- ═══════════════════════════════════════ RESET PASSWORD MODAL ═══════════════════════════════════ -->
+        <Border IsVisible="{Binding IsResetPasswordModalOpen}" Background="#80000000">
+            <Border Background="#1C1C36" BorderBrush="#323260" BorderThickness="1" CornerRadius="12" Padding="24" Width="400" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="Reset User Password" FontSize="18" FontWeight="Bold" Foreground="#FFFFFF" />
+                    <TextBlock Text="{Binding ResetPasswordTargetUser.Username, StringFormat='Setting new password for: {0}'}" FontSize="13" Foreground="#38BDF8" FontWeight="SemiBold" />
+
+                    <!-- New Password -->
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="New Password *" FontSize="12" Foreground="#8888AA" />
+                        <TextBox Text="{Binding ResetNewPassword}" PasswordChar="●" Background="#161628" Foreground="#FFFFFF" CornerRadius="6" />
+                        <TextBlock Text="Minimum 8 chars with uppercase, lowercase, and digit." FontSize="11" Foreground="#707090" />
+                    </StackPanel>
+
+                    <!-- Error Banner -->
+                    <TextBlock Text="{Binding ResetPasswordErrorMessage}"
+                               IsVisible="{Binding ResetPasswordErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                               Foreground="#FF5555" FontSize="12" TextWrapping="Wrap" />
+
+                    <!-- Buttons -->
+                    <Grid ColumnDefinitions="*,*" Margin="0,10,0,0">
+                        <Button Grid.Column="0" Command="{Binding CloseResetPasswordModalCommand}" Background="#252542" Foreground="#C0C0E0" Padding="12,8" CornerRadius="8" HorizontalAlignment="Stretch" Margin="0,0,6,0">
+                            <TextBlock Text="Cancel" HorizontalAlignment="Center" />
+                        </Button>
+                        <Button Grid.Column="1" Command="{Binding SaveResetPasswordCommand}" Background="#5E5CE6" Foreground="#FFFFFF" FontWeight="Bold" Padding="12,8" CornerRadius="8" HorizontalAlignment="Stretch" Margin="6,0,0,0">
+                            <TextBlock Text="Update Password" HorizontalAlignment="Center" />
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+    </Grid>
 </UserControl>

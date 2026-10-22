@@ -6,14 +6,204 @@
              mc:Ignorable="d"
              x:Class="PharmacyApp.Desktop.Views.Inventory.InventoryView"
              x:DataType="vm:InventoryViewModel">
-    <Design.DataContext>
-        <vm:InventoryViewModel />
-    </Design.DataContext>
-    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16">
-        <TextBlock Text="📦" FontSize="64" HorizontalAlignment="Center" Foreground="#2A2A50" />
-        <TextBlock Text="{Binding PageTitle}" FontSize="24" FontWeight="SemiBold"
-                   Foreground="#E0E0FF" HorizontalAlignment="Center" />
-        <TextBlock Text="{Binding StatusMessage}" FontSize="14" Foreground="#6060A0"
-                   HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="480" TextAlignment="Center" />
-    </StackPanel>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="24">
+
+        <!-- ═══════════════════════════════════════ HEADER ═══════════════════════════════════════ -->
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <StackPanel Spacing="4">
+                <TextBlock Text="Inventory &amp; Batches" FontSize="24" FontWeight="Bold" Foreground="#FFFFFF" />
+                <TextBlock Text="Track physical lots, expiry dates, storage locations, and audit stock adjustments."
+                           FontSize="13" Foreground="#8E8EA0" />
+            </StackPanel>
+        </Grid>
+
+        <!-- ═══════════════════════════════════════ MAIN CONTENT ═════════════════════════════════ -->
+        <Border Grid.Row="1" Background="#16162A" CornerRadius="12" BorderBrush="#252542" BorderThickness="1" Padding="16">
+            <Grid RowDefinitions="Auto,*">
+
+                <!-- Search & Filters -->
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,16">
+                    <TextBox Grid.Column="0"
+                             Text="{Binding SearchText}"
+                             PlaceholderText="Search by batch code, medicine name, or shelf location..."
+                             Background="#1F1F38"
+                             Foreground="#FFFFFF"
+                             BorderBrush="#2D2D50"
+                             CornerRadius="8"
+                             Padding="12,10"
+                             Margin="0,0,12,0" />
+
+                    <Button Grid.Column="1"
+                            Command="{Binding LoadBatchesCommand}"
+                            Background="#2B2B4A"
+                            Foreground="#E0E0FF"
+                            Padding="14,10"
+                            CornerRadius="8"
+                            Margin="0,0,12,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="🔍" FontSize="12" />
+                            <TextBlock Text="Filter" FontSize="13" />
+                        </StackPanel>
+                    </Button>
+
+                    <ComboBox Grid.Column="2"
+                              ItemsSource="{Binding FilterOptions}"
+                              SelectedIndex="{Binding FilterOption}"
+                              Background="#1F1F38"
+                              Foreground="#FFFFFF"
+                              BorderBrush="#2D2D50"
+                              CornerRadius="8"
+                              Padding="10,8" />
+                </Grid>
+
+                <!-- Batches List with Header -->
+                <Grid Grid.Row="1" RowDefinitions="Auto,*">
+                    <!-- Table Header -->
+                    <Border Grid.Row="0" Background="#1C1C36" CornerRadius="6" Padding="12,10" Margin="0,0,0,6">
+                        <Grid ColumnDefinitions="1.5*,2.5*,*,*,*,1.5*,1.5*,80">
+                            <TextBlock Grid.Column="0" Text="Batch Code" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                            <TextBlock Grid.Column="1" Text="Medicine" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                            <TextBlock Grid.Column="2" Text="Qty On Hand" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                            <TextBlock Grid.Column="3" Text="Cost (NPR)" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                            <TextBlock Grid.Column="4" Text="Price (NPR)" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                            <TextBlock Grid.Column="5" Text="Expiry Date" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                            <TextBlock Grid.Column="6" Text="Location" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                            <TextBlock Grid.Column="7" Text="Expired" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" HorizontalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Table Rows -->
+                    <ListBox Grid.Row="1"
+                             ItemsSource="{Binding Batches}"
+                             SelectedItem="{Binding SelectedBatch}"
+                             Background="Transparent">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="1.5*,2.5*,*,*,*,1.5*,1.5*,80" VerticalAlignment="Center">
+                                    <TextBlock Grid.Column="0" Text="{Binding BatchCode}" FontWeight="SemiBold" Foreground="#FFFFFF" FontFamily="Consolas,Monospace" />
+                                    <TextBlock Grid.Column="1" Text="{Binding MedicineName}" Foreground="#C0C0E0" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="2" Text="{Binding QuantityOnHand}" FontWeight="Bold" Foreground="#60A5FA" />
+                                    <TextBlock Grid.Column="3" Text="{Binding PurchaseCostNpr, StringFormat='{}{0:N2}'}" Foreground="#A0A0C0" />
+                                    <TextBlock Grid.Column="4" Text="{Binding SellingPriceNpr, StringFormat='{}{0:N2}'}" Foreground="#34D399" />
+                                    <TextBlock Grid.Column="5" Text="{Binding ExpiryDate, StringFormat='{}{0:yyyy-MM-dd}'}" Foreground="#E0E0FF" />
+                                    <TextBlock Grid.Column="6" Text="{Binding Location}" Foreground="#9090B0" />
+                                    <CheckBox Grid.Column="7" IsChecked="{Binding IsExpired}" IsEnabled="False" HorizontalAlignment="Center" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+
+            </Grid>
+        </Border>
+
+        <!-- ═══════════════════════════════════════ FOOTER & ACTIONS ═════════════════════════════ -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
+            <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" FontSize="12" Foreground="#7A7A9E" VerticalAlignment="Center" />
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" IsVisible="{Binding CanAdjustStock}">
+                <Button Command="{Binding OpenAdjustModalCommand}"
+                        IsEnabled="{Binding SelectedBatch, Converter={x:Static ObjectConverters.IsNotNull}}"
+                        Background="#312E81"
+                        Foreground="#E0E7FF"
+                        FontWeight="SemiBold"
+                        Padding="16,8"
+                        CornerRadius="6">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="⚖️" FontSize="12" />
+                        <TextBlock Text="Adjust Stock" FontSize="13" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- ═══════════════════════════════════════ MODAL ADJUSTMENT FORM ═══════════════════════ -->
+        <Border Grid.Row="0" Grid.RowSpan="3"
+                Background="#CC0B0B16"
+                IsVisible="{Binding IsAdjustModalOpen}">
+            <Border Background="#1C1C32"
+                    BorderBrush="#313158"
+                    BorderThickness="1"
+                    CornerRadius="16"
+                    Padding="28"
+                    MaxWidth="520"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Audit Stock Adjustment" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF" />
+                    <TextBlock Text="Record physical count corrections, damages, expired write-offs, or stock returns."
+                               FontSize="12" Foreground="#8E8EA0" />
+
+                    <!-- Error Banner -->
+                    <Border Background="#3B1822"
+                            BorderBrush="#E04060"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="12,10"
+                            IsVisible="{Binding AdjustErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Text="{Binding AdjustErrorMessage}" Foreground="#FF8090" TextWrapping="Wrap" />
+                    </Border>
+
+                    <Border Background="#141426" CornerRadius="8" Padding="14">
+                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+                            <StackPanel Grid.Row="0" Grid.Column="0">
+                                <TextBlock Text="Batch Code" FontSize="11" Foreground="#6A6A90" />
+                                <TextBlock Text="{Binding SelectedBatch.BatchCode}" FontSize="14" FontWeight="SemiBold" Foreground="#FFF" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="0" Grid.Column="1">
+                                <TextBlock Text="Current Stock" FontSize="11" Foreground="#6A6A90" />
+                                <TextBlock Text="{Binding SelectedBatch.QuantityOnHand}" FontSize="14" FontWeight="SemiBold" Foreground="#60A5FA" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,8,0,0">
+                                <TextBlock Text="Medicine" FontSize="11" Foreground="#6A6A90" />
+                                <TextBlock Text="{Binding SelectedBatch.MedicineName}" FontSize="13" Foreground="#E0E0FF" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="New Physical Quantity *" FontSize="12" Foreground="#A0A0C0" />
+                        <NumericUpDown Value="{Binding AdjustNewQuantity}" Minimum="0" Maximum="1000000" Background="#141426" Foreground="#FFF" CornerRadius="6" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Adjustment Reason Type *" FontSize="12" Foreground="#A0A0C0" />
+                        <ComboBox ItemsSource="{Binding AdjustmentTypeOptions}"
+                                  SelectedIndex="{Binding SelectedAdjustmentTypeIndex}"
+                                  HorizontalAlignment="Stretch"
+                                  Background="#141426"
+                                  Foreground="#FFF"
+                                  CornerRadius="6" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Audit Notes / Explanation *" FontSize="12" Foreground="#A0A0C0" />
+                        <TextBox Text="{Binding AdjustReason}" PlaceholderText="Provide mandatory reason for compliance log..." TextWrapping="Wrap" Height="70" Background="#141426" Foreground="#FFF" CornerRadius="6" />
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,12,0,0">
+                        <Button Grid.Column="1"
+                                Command="{Binding CloseAdjustModalCommand}"
+                                Content="Cancel"
+                                Background="#2B2B45"
+                                Foreground="#A0A0C0"
+                                Padding="16,8"
+                                CornerRadius="6"
+                                Margin="0,0,10,0" />
+
+                        <Button Grid.Column="2"
+                                Command="{Binding SubmitAdjustmentCommand}"
+                                Content="Commit Adjustment"
+                                Background="#4F46E5"
+                                Foreground="#FFFFFF"
+                                FontWeight="SemiBold"
+                                Padding="20,8"
+                                CornerRadius="6" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+    </Grid>
 </UserControl>

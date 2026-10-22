@@ -11,26 +11,50 @@ namespace PharmacyApp.Desktop.Navigation;
 public sealed class NavigationService : INavigationService
 {
     private readonly IServiceProvider _serviceProvider;
-    private ViewModelBase _currentPage;
+    private ViewModelBase? _currentPage;
 
     public event EventHandler<ViewModelBase>? NavigationChanged;
 
-    public ViewModelBase CurrentPage => _currentPage;
+    public ViewModelBase CurrentPage
+    {
+        get
+        {
+            if (_currentPage == null)
+            {
+                var vm = _serviceProvider.GetRequiredService<DashboardViewModel>();
+                _currentPage = vm;
+                if (vm is INavigationAware aware)
+                {
+                    _ = aware.OnNavigatedToAsync();
+                }
+            }
+            return _currentPage;
+        }
+    }
 
     public NavigationService(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
-        // Start on Dashboard.
-        _currentPage = _serviceProvider.GetRequiredService<DashboardViewModel>();
     }
 
     public void NavigateTo<TViewModel>() where TViewModel : ViewModelBase
     {
         ViewModelBase viewModel = _serviceProvider.GetRequiredService<TViewModel>();
-        if (ReferenceEquals(_currentPage, viewModel))
+        if (ReferenceEquals(CurrentPage, viewModel))
+        {
+            if (viewModel is INavigationAware sameAware)
+            {
+                _ = sameAware.OnNavigatedToAsync();
+            }
             return;
+        }
 
         _currentPage = viewModel;
         NavigationChanged?.Invoke(this, _currentPage);
+
+        if (viewModel is INavigationAware aware)
+        {
+            _ = aware.OnNavigatedToAsync();
+        }
     }
 }

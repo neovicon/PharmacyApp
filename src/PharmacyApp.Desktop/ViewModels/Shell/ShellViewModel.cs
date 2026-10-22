@@ -195,7 +195,7 @@ public sealed partial class ShellViewModel : ViewModelBase, IDisposable
     {
         try
         {
-            if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+            if (Avalonia.Application.Current is null || Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
             {
                 action();
             }

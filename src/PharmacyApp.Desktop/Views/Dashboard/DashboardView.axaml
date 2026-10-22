@@ -7,54 +7,204 @@
              x:Class="PharmacyApp.Desktop.Views.Dashboard.DashboardView"
              x:DataType="vm:DashboardViewModel">
 
-    <Design.DataContext>
-        <vm:DashboardViewModel />
-    </Design.DataContext>
+    <ScrollViewer Margin="24">
+        <StackPanel Spacing="24">
 
-    <Grid RowDefinitions="Auto,*">
+            <!-- ═══════════════════════════════════════ HEADER & REFRESH ═════════════════════════════ -->
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="4">
+                    <TextBlock Text="Operations Dashboard" FontSize="26" FontWeight="Bold" Foreground="#FFFFFF" />
+                    <TextBlock Text="Real-time pharmacy catalogue metrics, inventory levels, critical alerts, and audit trail."
+                               FontSize="13" Foreground="#8E8EA0" />
+                </StackPanel>
 
-        <!-- Page header -->
-        <Border Grid.Row="0"
-                Background="#16162A"
-                BorderBrush="#2A2A45"
-                BorderThickness="0,0,0,1"
-                Padding="32,20">
-            <StackPanel Spacing="4">
-                <TextBlock Text="{Binding PageTitle}"
-                           FontSize="24"
-                           FontWeight="SemiBold"
-                           Foreground="#E0E0FF" />
-                <TextBlock Text="Overview of pharmacy operations"
-                           FontSize="13"
-                           Foreground="#6060A0" />
-            </StackPanel>
-        </Border>
+                <Button Grid.Column="1"
+                        Command="{Binding LoadDashboardCommand}"
+                        Background="#262645"
+                        Foreground="#E0E0FF"
+                        Padding="14,8"
+                        CornerRadius="8">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="🔄" FontSize="12" />
+                        <TextBlock Text="Refresh" FontSize="13" />
+                    </StackPanel>
+                </Button>
+            </Grid>
 
-        <!-- Content -->
-        <StackPanel Grid.Row="1"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Center"
-                    Spacing="16">
-            <TextBlock Text="⊞"
-                       FontSize="64"
-                       HorizontalAlignment="Center"
-                       Foreground="#2A2A50" />
-            <TextBlock Text="{Binding StatusMessage}"
-                       FontSize="15"
-                       Foreground="#6060A0"
-                       HorizontalAlignment="Center"
-                       TextWrapping="Wrap"
-                       MaxWidth="480"
-                       TextAlignment="Center" />
-            <TextBlock Text="Business widgets will appear here once database persistence is implemented in Milestone 1."
-                       FontSize="12"
-                       Foreground="#404060"
-                       HorizontalAlignment="Center"
-                       TextWrapping="Wrap"
-                       MaxWidth="420"
-                       TextAlignment="Center" />
+            <!-- ═══════════════════════════════════════ KPI CARDS ════════════════════════════════════ -->
+            <Grid ColumnDefinitions="*,*,*,*">
+
+                <!-- CARD 1: CATALOGUE MEDICINES -->
+                <Border Grid.Column="0" Background="#16162A" BorderBrush="#252542" BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,12,0">
+                    <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="Master Catalogue" FontSize="12" Foreground="#8888AA" />
+                            <TextBlock Grid.Column="1" Text="💊" FontSize="16" />
+                        </Grid>
+                        <TextBlock Text="{Binding Summary.TotalMedicinesCount}" FontSize="26" FontWeight="Bold" Foreground="#FFFFFF" />
+                        <TextBlock Text="{Binding Summary.ActiveMedicinesCount, StringFormat='{}{0} active products'}" FontSize="12" Foreground="#34D399" />
+                    </StackPanel>
+                </Border>
+
+                <!-- CARD 2: UNITS IN STOCK -->
+                <Border Grid.Column="1" Background="#16162A" BorderBrush="#252542" BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,12,0">
+                    <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="Units In Stock" FontSize="12" Foreground="#8888AA" />
+                            <TextBlock Grid.Column="1" Text="📦" FontSize="16" />
+                        </Grid>
+                        <TextBlock Text="{Binding Summary.TotalUnitsInStock}" FontSize="26" FontWeight="Bold" Foreground="#FFFFFF" />
+                        <TextBlock Text="{Binding Summary.TotalBatchesCount, StringFormat='Across {0} lots'}" FontSize="12" Foreground="#60A5FA" />
+                    </StackPanel>
+                </Border>
+
+                <!-- CARD 3: LOW STOCK ALERTS -->
+                <Border Grid.Column="2" Background="#16162A" BorderBrush="#252542" BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,12,0">
+                    <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="Low Stock Warnings" FontSize="12" Foreground="#8888AA" />
+                            <TextBlock Grid.Column="1" Text="⚠️" FontSize="16" />
+                        </Grid>
+                        <TextBlock Text="{Binding Summary.LowStockMedicinesCount}" FontSize="26" FontWeight="Bold" Foreground="#F59E0B" />
+                        <TextBlock Text="Needs replenishment" FontSize="12" Foreground="#FBBF24" />
+                    </StackPanel>
+                </Border>
+
+                <!-- CARD 4: EXPIRY RISK -->
+                <Border Grid.Column="3" Background="#16162A" BorderBrush="#252542" BorderThickness="1" CornerRadius="12" Padding="16">
+                    <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="Expiring Within 90d" FontSize="12" Foreground="#8888AA" />
+                            <TextBlock Grid.Column="1" Text="⏳" FontSize="16" />
+                        </Grid>
+                        <TextBlock Text="{Binding Summary.ExpiringSoonBatchesCount}" FontSize="26" FontWeight="Bold" Foreground="#EF4444" />
+                        <TextBlock Text="Action required" FontSize="12" Foreground="#F87171" />
+                    </StackPanel>
+                </Border>
+
+            </Grid>
+
+            <!-- ═══════════════════════════════════════ QUICK SHORTCUTS ══════════════════════════════ -->
+            <Grid ColumnDefinitions="*,*,*,*">
+                <Button Grid.Column="0" Command="{Binding GoToSalesCommand}" Background="#1F2937" Padding="14,12" CornerRadius="8" Margin="0,0,12,0">
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                        <TextBlock Text="🧾" FontSize="16" />
+                        <TextBlock Text="New Dispense / Sale" FontWeight="SemiBold" Foreground="#E0E0FF" />
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="1" Command="{Binding GoToPurchasesCommand}" Background="#1F2937" Padding="14,12" CornerRadius="8" Margin="0,0,12,0">
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                        <TextBlock Text="📥" FontSize="16" />
+                        <TextBlock Text="Receive Stock" FontWeight="SemiBold" Foreground="#E0E0FF" />
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="2" Command="{Binding GoToMedicinesCommand}" Background="#1F2937" Padding="14,12" CornerRadius="8" Margin="0,0,12,0">
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                        <TextBlock Text="➕" FontSize="16" />
+                        <TextBlock Text="Add Medicine" FontWeight="SemiBold" Foreground="#E0E0FF" />
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="3" Command="{Binding GoToInventoryCommand}" Background="#1F2937" Padding="14,12" CornerRadius="8">
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                        <TextBlock Text="📦" FontSize="16" />
+                        <TextBlock Text="Inspect Batches" FontWeight="SemiBold" Foreground="#E0E0FF" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- ═══════════════════════════════════════ TWO COLUMNS: ALERTS & ACTIVITIES ═════════════ -->
+            <Grid ColumnDefinitions="*,*">
+
+                <!-- LEFT: CRITICAL ALERTS -->
+                <Border Grid.Column="0" Background="#16162A" CornerRadius="12" BorderBrush="#252542" BorderThickness="1" Padding="16" Margin="0,0,12,0">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="Critical Inventory Warnings" FontSize="16" FontWeight="SemiBold" Foreground="#FFFFFF" />
+
+                        <!-- Low Stock Items List -->
+                        <TextBlock Text="Medicines At or Below Reorder Threshold:" FontSize="12" FontWeight="SemiBold" Foreground="#F59E0B" />
+                        <ItemsControl ItemsSource="{Binding Summary.LowStockMedicines}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#1F1F35" CornerRadius="6" Padding="10,6" Margin="0,2">
+                                        <Grid ColumnDefinitions="*,Auto,Auto">
+                                            <TextBlock Grid.Column="0" Text="{Binding Name}" Foreground="#FFF" FontWeight="SemiBold" />
+                                            <TextBlock Grid.Column="1" Text="{Binding ReorderLevel, StringFormat='Reorder: {0}'}" FontSize="11" Foreground="#AAA" Margin="0,0,12,0" />
+                                            <Border Grid.Column="2" Background="#4A2A1A" CornerRadius="4" Padding="6,2">
+                                                <TextBlock Text="Low Stock" FontSize="10" Foreground="#F59E0B" />
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Expiring Batches List -->
+                        <TextBlock Text="Batches Expiring Soon:" FontSize="12" FontWeight="SemiBold" Foreground="#EF4444" Margin="0,8,0,0" />
+                        <ItemsControl ItemsSource="{Binding Summary.ExpiringBatches}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#1F1F35" CornerRadius="6" Padding="10,6" Margin="0,2">
+                                        <Grid ColumnDefinitions="*,Auto,Auto">
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="{Binding BatchCode}" Foreground="#FFF" FontWeight="Bold" />
+                                                <TextBlock Text="{Binding MedicineName}" FontSize="11" Foreground="#AAA" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="{Binding ExpiryDate, StringFormat='Exp: {0:yyyy-MM-dd}'}" FontSize="11" Foreground="#F87171" Margin="0,0,12,0" VerticalAlignment="Center" />
+                                            <Border Grid.Column="2" Background="#4A1A1A" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                                <TextBlock Text="Near Expiry" FontSize="10" Foreground="#EF4444" />
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- RIGHT: RECENT ACTIVITIES AUDIT -->
+                <Border Grid.Column="1" Background="#16162A" CornerRadius="12" BorderBrush="#252542" BorderThickness="1" Padding="16">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Recent Stock Audit Movements" FontSize="16" FontWeight="SemiBold" Foreground="#FFFFFF" />
+
+                        <Grid RowDefinitions="Auto,*" MaxHeight="400">
+                            <!-- Header -->
+                            <Border Grid.Row="0" Background="#1C1C36" CornerRadius="6" Padding="12,8" Margin="0,0,0,6">
+                                <Grid ColumnDefinitions="*,1.5*,*,0.8*,1.5*,Auto">
+                                    <TextBlock Grid.Column="0" Text="Type" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                                    <TextBlock Grid.Column="1" Text="Medicine" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                                    <TextBlock Grid.Column="2" Text="Batch" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                                    <TextBlock Grid.Column="3" Text="Delta" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                                    <TextBlock Grid.Column="4" Text="Reason" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                                    <TextBlock Grid.Column="5" Text="Time" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                                </Grid>
+                            </Border>
+
+                            <ListBox Grid.Row="1"
+                                     ItemsSource="{Binding Summary.RecentActivities}"
+                                     Background="Transparent">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="*,1.5*,*,0.8*,1.5*,Auto" VerticalAlignment="Center">
+                                            <TextBlock Grid.Column="0" Text="{Binding AdjustmentTypeName}" Foreground="#C0C0E0" FontSize="12" />
+                                            <TextBlock Grid.Column="1" Text="{Binding MedicineName}" Foreground="#FFFFFF" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="2" Text="{Binding BatchCode}" Foreground="#A0A0C0" FontFamily="Consolas,Monospace" FontSize="12" />
+                                            <TextBlock Grid.Column="3" Text="{Binding QuantityDelta}" FontWeight="Bold" Foreground="#60A5FA" FontSize="12" />
+                                            <TextBlock Grid.Column="4" Text="{Binding Reason}" Foreground="#8E8EA0" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="5" Text="{Binding TimestampUtc, StringFormat='{}{0:HH:mm}'}" Foreground="#707090" FontSize="11" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+            </Grid>
+
         </StackPanel>
-
-    </Grid>
+    </ScrollViewer>
 
 </UserControl>

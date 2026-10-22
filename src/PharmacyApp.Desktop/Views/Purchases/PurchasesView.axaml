@@ -1,19 +1,325 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:PharmacyApp.Desktop.ViewModels.Purchases"
+             xmlns:m="using:PharmacyApp.Application.Medicines"
+             xmlns:s="using:PharmacyApp.Application.Suppliers"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              x:Class="PharmacyApp.Desktop.Views.Purchases.PurchasesView"
              x:DataType="vm:PurchasesViewModel">
-    <Design.DataContext>
-        <vm:PurchasesViewModel />
-    </Design.DataContext>
-    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16">
-        <TextBlock Text="🛒" FontSize="64" HorizontalAlignment="Center" Foreground="#2A2A50" />
-        <TextBlock Text="{Binding PageTitle}" FontSize="24" FontWeight="SemiBold"
-                   Foreground="#E0E0FF" HorizontalAlignment="Center" />
-        <TextBlock Text="{Binding StatusMessage}" FontSize="14" Foreground="#6060A0"
-                   HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="480" TextAlignment="Center" />
-    </StackPanel>
+
+    <Grid RowDefinitions="Auto,*" Margin="24">
+
+        <!-- ═══════════════════════════════════════ HEADER ═══════════════════════════════════════ -->
+        <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,20">
+            <TextBlock Text="Purchases &amp; Stock Receiving" FontSize="24" FontWeight="Bold" Foreground="#FFFFFF" />
+            <TextBlock Text="Receive vendor shipments, assign internal batch numbers, verify expiry dates, and record purchase invoices."
+                       FontSize="13" Foreground="#8E8EA0" />
+        </StackPanel>
+
+        <!-- ═══════════════════════════════════════ CONTENT (2 Columns) ══════════════════════════ -->
+        <Grid Grid.Row="1" ColumnDefinitions="440,*">
+
+            <!-- LEFT: INTAKE FORM -->
+            <Border Grid.Column="0" Background="#16162A" CornerRadius="12" BorderBrush="#252542" BorderThickness="1" Padding="20" Margin="0,0,16,0">
+                <ScrollViewer>
+                    <StackPanel Spacing="14">
+                        <TextBlock Text="Receive Inventory Batch" FontSize="18" FontWeight="SemiBold" Foreground="#FFFFFF" />
+
+                        <!-- Error Banner -->
+                        <Border Background="#3B1822"
+                                BorderBrush="#E04060"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12,10"
+                                IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <TextBlock Text="{Binding ErrorMessage}" Foreground="#FF8090" TextWrapping="Wrap" />
+                        </Border>
+
+                        <!-- Supplier Selector with Quick Add Button -->
+                        <StackPanel Spacing="4">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="Wholesale Supplier / Vendor" FontSize="12" Foreground="#A0A0C0" VerticalAlignment="Center" />
+                                <Button Grid.Column="1"
+                                        Command="{Binding OpenAddSupplierModalCommand}"
+                                        Background="#252542"
+                                        Foreground="#818CF8"
+                                        Padding="8,3"
+                                        FontSize="11"
+                                        FontWeight="SemiBold"
+                                        CornerRadius="4">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="+" FontSize="12" FontWeight="Bold" />
+                                        <TextBlock Text="New Supplier" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                            <ComboBox ItemsSource="{Binding AvailableSuppliers}"
+                                      SelectedItem="{Binding SelectedSupplier}"
+                                      PlaceholderText="-- Select wholesale supplier --"
+                                      HorizontalAlignment="Stretch"
+                                      Background="#1F1F38"
+                                      Foreground="#FFFFFF"
+                                      CornerRadius="6">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="s:SupplierDto">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                                            <TextBlock Text="—" Foreground="#666" />
+                                            <TextBlock Text="{Binding PanNumber, StringFormat='PAN: {0}'}" Foreground="#AAA" IsVisible="{Binding PanNumber, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                            <TextBlock Text="{Binding Phone, StringFormat='Tel: {0}'}" Foreground="#888" IsVisible="{Binding Phone, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <!-- Medicine Selector with Refresh -->
+                        <StackPanel Spacing="4">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="Select Medicine Product *" FontSize="12" Foreground="#A0A0C0" VerticalAlignment="Center" />
+                                <Button Grid.Column="1"
+                                        Command="{Binding InitializeCommand}"
+                                        Background="#252542"
+                                        Foreground="#818CF8"
+                                        Padding="8,3"
+                                        FontSize="11"
+                                        FontWeight="SemiBold"
+                                        CornerRadius="4"
+                                        ToolTip.Tip="Reload medicines and suppliers from database">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="🔄" FontSize="11" />
+                                        <TextBlock Text="Refresh" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                            <ComboBox ItemsSource="{Binding AvailableMedicines}"
+                                      SelectedItem="{Binding SelectedMedicine}"
+                                      PlaceholderText="-- Select medicine from catalogue --"
+                                      HorizontalAlignment="Stretch"
+                                      Background="#1F1F38"
+                                      Foreground="#FFFFFF"
+                                      CornerRadius="6">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="m:MedicineDto">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                                            <TextBlock Text="—" Foreground="#666" />
+                                            <TextBlock Text="{Binding GenericName}" Foreground="#A0A0C0" />
+                                            <TextBlock Text="{Binding Strength, StringFormat='({0})'}" Foreground="#38BDF8" IsVisible="{Binding Strength, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <!-- Selected Medicine Details Ribbon -->
+                            <Border Background="#1C1C36" CornerRadius="6" Padding="10,6" Margin="0,2,0,0"
+                                    IsVisible="{Binding SelectedMedicine, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                <Grid ColumnDefinitions="*,*,*">
+                                    <TextBlock Grid.Column="0" Text="{Binding SelectedMedicine.DosageForm, StringFormat='Form: {0}'}" FontSize="11" Foreground="#94A3B8" />
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedMedicine.DispensingUnit, StringFormat='Unit: {0}'}" FontSize="11" Foreground="#94A3B8" />
+                                    <TextBlock Grid.Column="2" Text="{Binding SelectedMedicine.Category, StringFormat='Category: {0}'}" FontSize="11" Foreground="#94A3B8" IsVisible="{Binding SelectedMedicine.Category, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                </Grid>
+                            </Border>
+
+                            <!-- Empty State Warning if no medicines exist -->
+                            <Border Background="#3B2610" BorderBrush="#D97706" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,2,0,0"
+                                    IsVisible="{Binding !AvailableMedicines.Count}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="⚠️" FontSize="13" VerticalAlignment="Center" />
+                                    <TextBlock Text="No medicines loaded yet. Click 'Refresh' or add one in Medicines." FontSize="11" Foreground="#FDE68A" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Batch Code & Quantity -->
+                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto">
+                            <StackPanel Grid.Column="0" Margin="0,0,6,0" Spacing="4">
+                                <TextBlock Text="Batch Code *" FontSize="12" Foreground="#A0A0C0" />
+                                <TextBox Text="{Binding BatchCode}" PlaceholderText="e.g. B-2026-01" Background="#1F1F38" Foreground="#FFF" CornerRadius="6" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="6,0,0,0" Spacing="4">
+                                <TextBlock Text="Quantity Received *" FontSize="12" Foreground="#A0A0C0" />
+                                <NumericUpDown Value="{Binding Quantity}" Minimum="1" Maximum="1000000" Background="#1F1F38" Foreground="#FFF" CornerRadius="6" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Purchase Cost & Selling Price -->
+                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto">
+                            <StackPanel Grid.Column="0" Margin="0,0,6,0" Spacing="4">
+                                <TextBlock Text="Purchase Cost (NPR) *" FontSize="12" Foreground="#A0A0C0" />
+                                <NumericUpDown Value="{Binding PurchaseCostNpr}" Minimum="0" FormatString="N2" Increment="0.5" Background="#1F1F38" Foreground="#FFF" CornerRadius="6" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="6,0,0,0" Spacing="4">
+                                <TextBlock Text="Selling Price (NPR) *" FontSize="12" Foreground="#A0A0C0" />
+                                <NumericUpDown Value="{Binding SellingPriceNpr}" Minimum="0" FormatString="N2" Increment="0.5" Background="#1F1F38" Foreground="#FFF" CornerRadius="6" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Expiry Date -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Expiration Date *" FontSize="12" Foreground="#A0A0C0" />
+                            <DatePicker SelectedDate="{Binding ExpiryDate}" HorizontalAlignment="Stretch" Background="#1F1F38" Foreground="#FFF" CornerRadius="6" />
+                        </StackPanel>
+
+                        <!-- Manufacturer Lot Number & Storage Location -->
+                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto">
+                            <StackPanel Grid.Column="0" Margin="0,0,6,0" Spacing="4">
+                                <TextBlock Text="Mfg Lot Number" FontSize="12" Foreground="#A0A0C0" />
+                                <TextBox Text="{Binding ManufacturerBatchNumber}" PlaceholderText="e.g. LOT-9988" Background="#1F1F38" Foreground="#FFF" CornerRadius="6" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="6,0,0,0" Spacing="4">
+                                <TextBlock Text="Storage Shelf / Rack" FontSize="12" Foreground="#A0A0C0" />
+                                <TextBox Text="{Binding StorageLocation}" PlaceholderText="e.g. Shelf A-2" Background="#1F1F38" Foreground="#FFF" CornerRadius="6" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Notes -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Invoice Number / Intake Notes" FontSize="12" Foreground="#A0A0C0" />
+                            <TextBox Text="{Binding Notes}" PlaceholderText="Supplier invoice #, vendor name, or receiving remarks..." Background="#1F1F38" Foreground="#FFF" CornerRadius="6" />
+                        </StackPanel>
+
+                        <!-- Submit Button -->
+                        <Button Command="{Binding SubmitPurchaseCommand}"
+                                Background="#4F46E5"
+                                Foreground="#FFFFFF"
+                                FontWeight="Bold"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Padding="0,12"
+                                CornerRadius="8"
+                                Margin="0,10,0,0">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="📥" FontSize="14" />
+                                <TextBlock Text="Confirm Stock Receipt" FontSize="14" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- RIGHT: RECENT INTAKES GRID -->
+            <Border Grid.Column="1" Background="#16162A" CornerRadius="12" BorderBrush="#252542" BorderThickness="1" Padding="16">
+                <Grid RowDefinitions="Auto,*">
+                    <TextBlock Grid.Row="0" Text="Recently Received Lots" FontSize="16" FontWeight="SemiBold" Foreground="#FFFFFF" Margin="0,0,0,12" />
+
+                    <!-- Batches List with Header -->
+                    <Grid Grid.Row="1" RowDefinitions="Auto,*">
+                        <Border Grid.Row="0" Background="#1C1C36" CornerRadius="6" Padding="12,10" Margin="0,0,0,6">
+                            <Grid ColumnDefinitions="1.5*,2.5*,*,*,*,1.5*,*">
+                                <TextBlock Grid.Column="0" Text="Batch Code" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                                <TextBlock Grid.Column="1" Text="Medicine" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                                <TextBlock Grid.Column="2" Text="Qty Recv" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                                <TextBlock Grid.Column="3" Text="Cost (NPR)" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                                <TextBlock Grid.Column="4" Text="Selling Price" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                                <TextBlock Grid.Column="5" Text="Expiry Date" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                                <TextBlock Grid.Column="6" Text="Location" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                            </Grid>
+                        </Border>
+
+                        <ListBox Grid.Row="1"
+                                 ItemsSource="{Binding RecentBatches}"
+                                 Background="Transparent">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="1.5*,2.5*,*,*,*,1.5*,*" VerticalAlignment="Center">
+                                        <TextBlock Grid.Column="0" Text="{Binding BatchCode}" FontWeight="SemiBold" Foreground="#FFFFFF" FontFamily="Consolas,Monospace" />
+                                        <TextBlock Grid.Column="1" Text="{Binding MedicineName}" Foreground="#C0C0E0" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="2" Text="{Binding QuantityOnHand}" FontWeight="Bold" Foreground="#60A5FA" />
+                                        <TextBlock Grid.Column="3" Text="{Binding PurchaseCostNpr, StringFormat='{}{0:N2}'}" Foreground="#A0A0C0" />
+                                        <TextBlock Grid.Column="4" Text="{Binding SellingPriceNpr, StringFormat='{}{0:N2}'}" Foreground="#34D399" />
+                                        <TextBlock Grid.Column="5" Text="{Binding ExpiryDate, StringFormat='{}{0:yyyy-MM-dd}'}" Foreground="#E0E0FF" />
+                                        <TextBlock Grid.Column="6" Text="{Binding Location}" Foreground="#9090B0" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </Grid>
+            </Border>
+
+        </Grid>
+
+        <!-- ═══════════════════════════════════════ ADD SUPPLIER MODAL ═══════════════════════════════════════ -->
+        <Border Grid.Row="0" Grid.RowSpan="2"
+                IsVisible="{Binding IsAddSupplierModalOpen}"
+                Background="#80000000">
+            <Border Background="#16162A"
+                    BorderBrush="#252542"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="24"
+                    Width="460"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="Register New Supplier" FontSize="18" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                    <TextBlock Text="Enter details for wholesale pharmaceutical distributor or manufacturer." FontSize="12" Foreground="#8E8EA0" />
+
+                    <!-- Error Banner -->
+                    <Border Background="#3B1822"
+                            BorderBrush="#E04060"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="12,10"
+                            IsVisible="{Binding AddSupplierErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Text="{Binding AddSupplierErrorMessage}" Foreground="#FF8090" TextWrapping="Wrap" />
+                    </Border>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Company / Supplier Name *" FontSize="12" Foreground="#A0A0C0" />
+                        <TextBox Text="{Binding NewSupplierName}" PlaceholderText="e.g. Nepal Medico-Pharma Traders" Background="#1F1F38" Foreground="#FFF" CornerRadius="6" />
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto">
+                        <StackPanel Grid.Column="0" Margin="0,0,6,0" Spacing="4">
+                            <TextBlock Text="Contact Person" FontSize="12" Foreground="#A0A0C0" />
+                            <TextBox Text="{Binding NewSupplierContactPerson}" PlaceholderText="e.g. Ramesh Shrestha" Background="#1F1F38" Foreground="#FFF" CornerRadius="6" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="6,0,0,0" Spacing="4">
+                            <TextBlock Text="Phone Number" FontSize="12" Foreground="#A0A0C0" />
+                            <TextBox Text="{Binding NewSupplierPhone}" PlaceholderText="e.g. 01-4455667 / 9801234567" Background="#1F1F38" Foreground="#FFF" CornerRadius="6" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto">
+                        <StackPanel Grid.Column="0" Margin="0,0,6,0" Spacing="4">
+                            <TextBlock Text="PAN / Tax Number" FontSize="12" Foreground="#A0A0C0" />
+                            <TextBox Text="{Binding NewSupplierPan}" PlaceholderText="e.g. 600123456" Background="#1F1F38" Foreground="#FFF" CornerRadius="6" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="6,0,0,0" Spacing="4">
+                            <TextBlock Text="Email Address" FontSize="12" Foreground="#A0A0C0" />
+                            <TextBox Text="{Binding NewSupplierEmail}" PlaceholderText="e.g. sales@nepalpharma.com" Background="#1F1F38" Foreground="#FFF" CornerRadius="6" />
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Address / Location" FontSize="12" Foreground="#A0A0C0" />
+                        <TextBox Text="{Binding NewSupplierAddress}" PlaceholderText="e.g. Birgunj / Tripureshwor, Kathmandu" Background="#1F1F38" Foreground="#FFF" CornerRadius="6" />
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,10,0,0">
+                        <Button Grid.Column="1"
+                                Command="{Binding CloseAddSupplierModalCommand}"
+                                Content="Cancel"
+                                Background="#2B2B45"
+                                Foreground="#A0A0C0"
+                                Padding="16,8"
+                                CornerRadius="8"
+                                Margin="0,0,8,0" />
+                        <Button Grid.Column="2"
+                                Command="{Binding SaveNewSupplierCommand}"
+                                Content="Save Supplier"
+                                Background="#4F46E5"
+                                Foreground="#FFFFFF"
+                                FontWeight="SemiBold"
+                                Padding="18,8"
+                                CornerRadius="8" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
 </UserControl>

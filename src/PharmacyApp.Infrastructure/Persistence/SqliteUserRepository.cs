@@ -139,6 +139,36 @@ public sealed class SqliteUserRepository : IUserRepository
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<User>> ListAsync(CancellationToken cancellationToken = default)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await using var checkTableCmd = connection.CreateCommand();
+        checkTableCmd.CommandText = "SELECT COUNT(1) FROM sqlite_master WHERE type='table' AND name='Users';";
+        long tableExists = (long)(await checkTableCmd.ExecuteScalarAsync(cancellationToken) ?? 0L);
+        if (tableExists == 0)
+        {
+            return Array.Empty<User>();
+        }
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT Id, Username, DisplayName, PasswordHash, Role, IsActive, CreatedAt, UpdatedAt, Version
+            FROM Users
+            ORDER BY Username ASC;
+            """;
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var users = new List<User>();
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            users.Add(MapUserFromReader(reader));
+        }
+
+        return users;
+    }
+
     public async Task<bool> TryCreateInitialAdminAsync(User user, CancellationToken cancellationToken = default)
     {
         await using var connection = new SqliteConnection(_connectionString);

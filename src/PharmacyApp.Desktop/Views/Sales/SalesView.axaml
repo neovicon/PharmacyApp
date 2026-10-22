@@ -1,19 +1,597 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:PharmacyApp.Desktop.ViewModels.Sales"
+             xmlns:inv="using:PharmacyApp.Application.Inventory"
+             xmlns:sales="using:PharmacyApp.Application.Sales"
+             xmlns:enums="using:PharmacyApp.Domain.Enums"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              x:Class="PharmacyApp.Desktop.Views.Sales.SalesView"
              x:DataType="vm:SalesViewModel">
-    <Design.DataContext>
-        <vm:SalesViewModel />
-    </Design.DataContext>
-    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16">
-        <TextBlock Text="🧾" FontSize="64" HorizontalAlignment="Center" Foreground="#2A2A50" />
-        <TextBlock Text="{Binding PageTitle}" FontSize="24" FontWeight="SemiBold"
-                   Foreground="#E0E0FF" HorizontalAlignment="Center" />
-        <TextBlock Text="{Binding StatusMessage}" FontSize="14" Foreground="#6060A0"
-                   HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="480" TextAlignment="Center" />
-    </StackPanel>
+
+    <Grid RowDefinitions="Auto,*" Margin="24">
+
+        <!-- ═══════════════════════════════════════ HEADER ═══════════════════════════════════════ -->
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <StackPanel Spacing="4">
+                <TextBlock Text="Point of Sale &amp; Dispensing" FontSize="24" FontWeight="Bold" Foreground="#FFFFFF" />
+                <TextBlock Text="Fast FEFO batch selection, prescription verification, stock deduction, and billing."
+                           FontSize="13" Foreground="#8E8EA0" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Button Command="{Binding OpenHistoryModalCommand}"
+                        Background="#252542"
+                        Foreground="#E0E0FF"
+                        FontWeight="SemiBold"
+                        Padding="14,8"
+                        CornerRadius="8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="📜" />
+                        <TextBlock Text="Sales History &amp; Invoices" />
+                    </StackPanel>
+                </Button>
+
+                <Button Command="{Binding OpenReturnModalCommand}"
+                        Background="#252542"
+                        Foreground="#38BDF8"
+                        FontWeight="SemiBold"
+                        Padding="14,8"
+                        CornerRadius="8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="↩️" />
+                        <TextBlock Text="Customer Return / Refund" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- ═══════════════════════════════════════ MAIN CONTENT ═════════════════════════════════ -->
+        <Grid Grid.Row="1" ColumnDefinitions="480,*">
+
+            <!-- LEFT: MEDICINE SEARCH & BATCH SELECTION -->
+            <Border Grid.Column="0" Background="#16162A" CornerRadius="12" BorderBrush="#252542" BorderThickness="1" Padding="16" Margin="0,0,16,0">
+                <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
+
+                    <!-- Barcode Quick-Scan Box -->
+                    <Border Grid.Row="0" Background="#1C1C38" BorderBrush="#353560" BorderThickness="1" CornerRadius="8" Padding="8" Margin="0,0,0,10">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <TextBlock Grid.Column="0" Text="📟" FontSize="16" VerticalAlignment="Center" Margin="4,0,8,0" />
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding QuickBarcodeInput}"
+                                     PlaceholderText="Quick scan barcode / code..."
+                                     Background="#121224"
+                                     Foreground="#38BDF8"
+                                     FontFamily="Consolas,Monospace"
+                                     BorderThickness="0"
+                                     CornerRadius="6"
+                                     Padding="10,6" />
+                            <Button Grid.Column="2"
+                                    Command="{Binding QuickScanBarcodeCommand}"
+                                    Content="Scan"
+                                    Background="#3B82F6"
+                                    Foreground="#FFF"
+                                    CornerRadius="6"
+                                    Margin="8,0,0,0"
+                                    Padding="12,6" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Medicine Name Search Bar -->
+                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding SearchText}"
+                                 PlaceholderText="Search medicine by name..."
+                                 Background="#1F1F38"
+                                 Foreground="#FFF"
+                                 CornerRadius="8"
+                                 Padding="10,8"
+                                 Margin="0,0,8,0" />
+                        <Button Grid.Column="1"
+                                Command="{Binding SearchCommand}"
+                                Content="Search"
+                                Background="#262645"
+                                Foreground="#E0E0FF"
+                                CornerRadius="8"
+                                Padding="14,8" />
+                    </Grid>
+
+                    <!-- Medicine Search Results List -->
+                    <Border Grid.Row="2" Background="#121224" CornerRadius="8" Padding="6" Margin="0,0,0,10">
+                        <ListBox ItemsSource="{Binding SearchResults}"
+                                 SelectedItem="{Binding SelectedMedicine}"
+                                 Background="Transparent">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="*,Auto,Auto">
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="#FFF" />
+                                            <TextBlock Text="{Binding GenericName, StringFormat='({0})'}" FontSize="11" Foreground="#8888AA" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" Text="{Binding DosageForm}" FontSize="11" Foreground="#AAA" Margin="0,0,10,0" VerticalAlignment="Center" />
+                                        <Border Grid.Column="2"
+                                                Background="#4A1A1A"
+                                                CornerRadius="4"
+                                                Padding="6,2"
+                                                VerticalAlignment="Center"
+                                                IsVisible="{Binding RequiresPrescription}">
+                                            <TextBlock Text="Rx Req" FontSize="10" Foreground="#F87171" FontWeight="Bold" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Border>
+
+                    <!-- Batch Selector (FEFO) -->
+                    <StackPanel Grid.Row="3" Spacing="6" Margin="0,0,0,12">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="Select In-Stock Batch (FEFO Sorted) *" FontSize="12" FontWeight="SemiBold" Foreground="#A0A0C0" />
+                            <TextBlock Grid.Column="1" Text="Earliest Expiry First" FontSize="11" Foreground="#34D399" />
+                        </Grid>
+
+                        <ComboBox ItemsSource="{Binding AvailableBatches}"
+                                  SelectedItem="{Binding SelectedBatch}"
+                                  HorizontalAlignment="Stretch"
+                                  Background="#1F1F38"
+                                  Foreground="#FFF"
+                                  CornerRadius="8">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate DataType="inv:BatchDto">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                        <TextBlock Grid.Column="0" Text="{Binding BatchCode}" FontWeight="Bold" Foreground="#38BDF8" FontFamily="Consolas,Monospace" Margin="0,0,12,0" />
+                                        <TextBlock Grid.Column="1" Text="{Binding ExpiryDate, StringFormat='Exp: {0:yyyy-MM-dd}'}" FontSize="12" Foreground="#E0E0FF" Margin="0,0,12,0" />
+                                        <TextBlock Grid.Column="2" Text="{Binding QuantityOnHand, StringFormat='Qty: {0}'}" FontSize="12" Foreground="#FBBF24" Margin="0,0,12,0" />
+                                        <TextBlock Grid.Column="3" Text="{Binding SellingPriceNpr, StringFormat='@ NPR {0:N2}'}" FontSize="12" Foreground="#34D399" FontWeight="Bold" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <!-- Quantity & Add to Cart -->
+                    <Grid Grid.Row="4" ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0" Text="Quantity:" FontSize="13" Foreground="#FFF" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <NumericUpDown Grid.Column="1"
+                                       Value="{Binding QuantityToDispense}"
+                                       Minimum="1"
+                                       Maximum="10000"
+                                       Background="#1F1F38"
+                                       Foreground="#FFF"
+                                       CornerRadius="8"
+                                       Margin="0,0,10,0" />
+                        <Button Grid.Column="2"
+                                Command="{Binding AddToCartCommand}"
+                                Content="➕ Add to Cart"
+                                Background="#10B981"
+                                Foreground="#FFFFFF"
+                                FontWeight="Bold"
+                                Padding="16,10"
+                                CornerRadius="8" />
+                    </Grid>
+
+                </Grid>
+            </Border>
+
+            <!-- RIGHT: CART, CHECKOUT, PRICING & PAYMENT -->
+            <Border Grid.Column="1" Background="#16162A" CornerRadius="12" BorderBrush="#252542" BorderThickness="1" Padding="16">
+                <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+                    <!-- Cart Title -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="🛒 Dispensing Cart" FontSize="18" FontWeight="Bold" Foreground="#FFFFFF" />
+                            <Border Background="#252545" CornerRadius="12" Padding="8,2" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding CartItems.Count, StringFormat='{}{0} item(s)'}" FontSize="11" Foreground="#38BDF8" />
+                            </Border>
+                        </StackPanel>
+
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding StatusMessage}"
+                                   FontSize="12"
+                                   Foreground="#34D399"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+
+                    <!-- Error Banner -->
+                    <Border Grid.Row="1"
+                            Background="#3B1822"
+                            BorderBrush="#E04060"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="12,8"
+                            Margin="0,0,0,10"
+                            IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Text="{Binding ErrorMessage}" Foreground="#FF8090" TextWrapping="Wrap" />
+                    </Border>
+
+                    <!-- Cart Table -->
+                    <Grid Grid.Row="2" RowDefinitions="Auto,*">
+                        <Border Grid.Row="0" Background="#1C1C36" CornerRadius="6" Padding="12,8" Margin="0,0,0,4">
+                            <Grid ColumnDefinitions="2*,*,0.8*,*,*,Auto">
+                                <TextBlock Grid.Column="0" Text="Medicine" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                                <TextBlock Grid.Column="1" Text="Batch" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                                <TextBlock Grid.Column="2" Text="Qty" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                                <TextBlock Grid.Column="3" Text="Unit Price" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                                <TextBlock Grid.Column="4" Text="Total" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                                <TextBlock Grid.Column="5" Text="" Width="30" />
+                            </Grid>
+                        </Border>
+
+                        <ListBox Grid.Row="1"
+                                 ItemsSource="{Binding CartItems}"
+                                 Background="Transparent">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="2*,*,0.8*,*,*,Auto" VerticalAlignment="Center">
+                                        <TextBlock Grid.Column="0" Text="{Binding MedicineName}" FontWeight="SemiBold" Foreground="#FFFFFF" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="1" Text="{Binding BatchCode}" Foreground="#B0B0D0" FontFamily="Consolas,Monospace" />
+                                        <TextBlock Grid.Column="2" Text="{Binding Quantity}" FontWeight="Bold" Foreground="#60A5FA" />
+                                        <TextBlock Grid.Column="3" Text="{Binding UnitPriceNpr, StringFormat='{}{0:N2}'}" Foreground="#A0A0C0" />
+                                        <TextBlock Grid.Column="4" Text="{Binding LineTotalNpr, StringFormat='{}{0:N2}'}" FontWeight="Bold" Foreground="#34D399" />
+                                        <Button Grid.Column="5"
+                                                Command="{Binding $parent[UserControl].((vm:SalesViewModel)DataContext).RemoveFromCartCommand}"
+                                                CommandParameter="{Binding}"
+                                                Content="✕"
+                                                Background="Transparent"
+                                                Foreground="#EF4444"
+                                                Padding="4,2" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+
+                    <!-- Cart Summary & Actions -->
+                    <Border Grid.Row="3" Background="#131326" CornerRadius="10" Padding="16" Margin="0,12,0,0">
+                        <Grid RowDefinitions="Auto,Auto,Auto,Auto">
+
+                            <!-- Inputs: Customer, Rx, Payment Method -->
+                            <Grid Grid.Row="0" ColumnDefinitions="*,*,*" Margin="0,0,0,10">
+                                <StackPanel Grid.Column="0" Margin="0,0,8,0" Spacing="4">
+                                    <TextBlock Text="Customer / Patient" FontSize="11" Foreground="#A0A0C0" />
+                                    <TextBox Text="{Binding CustomerName}" PlaceholderText="e.g. Ram Bahadur" Background="#1C1C35" Foreground="#FFF" CornerRadius="6" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="4,0,4,0" Spacing="4">
+                                    <TextBlock Text="Prescription #" FontSize="11" Foreground="#A0A0C0" />
+                                    <TextBox Text="{Binding PrescriptionNumber}" PlaceholderText="e.g. RX-2026-0042" Background="#1C1C35" Foreground="#FFF" CornerRadius="6" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Margin="8,0,0,0" Spacing="4">
+                                    <TextBlock Text="Payment Method" FontSize="11" Foreground="#A0A0C0" />
+                                    <ComboBox ItemsSource="{Binding AvailablePaymentMethods}"
+                                              SelectedItem="{Binding SelectedPaymentMethod}"
+                                              HorizontalAlignment="Stretch"
+                                              Background="#1C1C35"
+                                              Foreground="#FFF"
+                                              CornerRadius="6" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Financial Breakdown: Subtotal, Discount, Tax -->
+                            <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" Margin="0,0,0,10">
+                                <StackPanel Grid.Column="0" Margin="0,0,6,0">
+                                    <TextBlock Text="Sub-Total" FontSize="11" Foreground="#8888AA" />
+                                    <TextBlock Text="{Binding SubTotalNpr, StringFormat='NPR {0:N2}'}" FontSize="14" FontWeight="SemiBold" Foreground="#FFF" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Margin="4,0,4,0" Spacing="2">
+                                    <TextBlock Text="Discount (NPR)" FontSize="11" Foreground="#8888AA" />
+                                    <NumericUpDown Value="{Binding DiscountAmountNpr}" Minimum="0" Maximum="100000" Background="#1C1C35" Foreground="#FFF" CornerRadius="6" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Margin="4,0,4,0" Spacing="2">
+                                    <TextBlock Text="Tax / VAT %" FontSize="11" Foreground="#8888AA" />
+                                    <NumericUpDown Value="{Binding TaxPercentage}" Minimum="0" Maximum="100" Background="#1C1C35" Foreground="#FFF" CornerRadius="6" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="3" Margin="6,0,0,0" HorizontalAlignment="Right">
+                                    <TextBlock Text="Tax Amount" FontSize="11" Foreground="#8888AA" HorizontalAlignment="Right" />
+                                    <TextBlock Text="{Binding TaxNpr, StringFormat='NPR {0:N2}'}" FontSize="14" FontWeight="SemiBold" Foreground="#FBBF24" HorizontalAlignment="Right" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Grand Total -->
+                            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+                                <TextBlock Grid.Column="0" Text="Final Total to Pay:" FontSize="16" FontWeight="SemiBold" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1" Text="{Binding GrandTotalNpr, StringFormat='NPR {0:N2}'}" FontSize="24" FontWeight="Bold" Foreground="#10B981" />
+                            </Grid>
+
+                            <!-- Checkout Buttons -->
+                            <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto">
+                                <Button Grid.Column="0"
+                                        Command="{Binding ClearCartCommand}"
+                                        Content="Clear Cart"
+                                        Background="#2B2B45"
+                                        Foreground="#A0A0C0"
+                                        Padding="14,10"
+                                        CornerRadius="8" />
+
+                                <Button Grid.Column="2"
+                                        Command="{Binding CompleteSaleCommand}"
+                                        Content="Complete Sale &amp; Dispense"
+                                        Background="#4F46E5"
+                                        Foreground="#FFFFFF"
+                                        FontWeight="Bold"
+                                        Padding="24,10"
+                                        CornerRadius="8" />
+                            </Grid>
+
+                        </Grid>
+                    </Border>
+
+                </Grid>
+            </Border>
+
+        </Grid>
+
+        <!-- ═══════════════════════════════════════ MODAL RECEIPT OVERLAY ═══════════════════════ -->
+        <Border Grid.Row="0" Grid.RowSpan="2"
+                Background="#CC0B0B16"
+                IsVisible="{Binding IsReceiptOpen}">
+            <Border Background="#1C1C32"
+                    BorderBrush="#313158"
+                    BorderThickness="1"
+                    CornerRadius="16"
+                    Padding="28"
+                    MaxWidth="520"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="✅ Dispensing Completed" FontSize="20" FontWeight="Bold" Foreground="#10B981" HorizontalAlignment="Center" />
+                    <TextBlock Text="Stock successfully deducted and invoice recorded." FontSize="12" Foreground="#8E8EA0" HorizontalAlignment="Center" />
+
+                    <Border Background="#141426" CornerRadius="8" Padding="14">
+                        <StackPanel Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="Invoice Number:" FontSize="12" Foreground="#8888AA" />
+                                <TextBlock Grid.Column="1" Text="{Binding LastReceipt.InvoiceNumber}" FontSize="12" FontWeight="Bold" Foreground="#38BDF8" FontFamily="Consolas,Monospace" />
+                            </Grid>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="Date &amp; Time:" FontSize="11" Foreground="#8888AA" />
+                                <TextBlock Grid.Column="1" Text="{Binding LastReceipt.TimestampUtc, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" FontSize="11" Foreground="#AAA" />
+                            </Grid>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="Payment Method:" FontSize="11" Foreground="#8888AA" />
+                                <TextBlock Grid.Column="1" Text="{Binding LastReceipt.PaymentMethod}" FontSize="11" Foreground="#FFF" />
+                            </Grid>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="Items Count:" FontSize="11" Foreground="#8888AA" />
+                                <TextBlock Grid.Column="1" Text="{Binding LastReceipt.Lines.Count}" FontSize="11" Foreground="#FFF" />
+                            </Grid>
+                            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding LastReceipt.DiscountNpr}">
+                                <TextBlock Grid.Column="0" Text="Discount Applied:" FontSize="11" Foreground="#8888AA" />
+                                <TextBlock Grid.Column="1" Text="{Binding LastReceipt.DiscountNpr, StringFormat='-NPR {0:N2}'}" FontSize="11" Foreground="#F87171" />
+                            </Grid>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="Total Amount Paid:" FontSize="14" FontWeight="Bold" Foreground="#FFF" />
+                                <TextBlock Grid.Column="1" Text="{Binding LastReceipt.TotalAmountNpr, StringFormat='NPR {0:N2}'}" FontSize="16" FontWeight="Bold" Foreground="#10B981" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Grid ColumnDefinitions="*,*">
+                        <Button Grid.Column="0"
+                                Command="{Binding PrintOrExportReceiptCommand}"
+                                Content="🖨️ Print / Export"
+                                Background="#252545"
+                                Foreground="#38BDF8"
+                                FontWeight="SemiBold"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Padding="0,10"
+                                CornerRadius="8"
+                                Margin="0,0,6,0" />
+
+                        <Button Grid.Column="1"
+                                Command="{Binding CloseReceiptCommand}"
+                                Content="Done &amp; New Sale"
+                                Background="#4F46E5"
+                                Foreground="#FFFFFF"
+                                FontWeight="Bold"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Padding="0,10"
+                                CornerRadius="8"
+                                Margin="6,0,0,0" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- ═══════════════════════════════════════ MODAL SALES HISTORY / INVOICES OVERLAY ════════ -->
+        <Border Grid.Row="0" Grid.RowSpan="2"
+                Background="#CC0B0B16"
+                IsVisible="{Binding IsHistoryModalOpen}">
+            <Border Background="#1C1C32"
+                    BorderBrush="#313158"
+                    BorderThickness="1"
+                    CornerRadius="16"
+                    Padding="24"
+                    Width="740"
+                    MaxHeight="600"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                <Grid RowDefinitions="Auto,Auto,*,Auto">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="📜 Sales History &amp; Invoices" FontSize="18" FontWeight="Bold" Foreground="#FFFFFF" />
+                            <TextBlock Text="Search, inspect, and reprint finalized sales receipts." FontSize="12" Foreground="#8E8EA0" />
+                        </StackPanel>
+                        <Button Grid.Column="1"
+                                Command="{Binding CloseHistoryModalCommand}"
+                                Content="✕"
+                                Background="Transparent"
+                                Foreground="#A0A0C0"
+                                FontSize="14" />
+                    </Grid>
+
+                    <!-- Search Filter -->
+                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding InvoiceSearchText}"
+                                 PlaceholderText="Search by invoice number, customer name, or prescription..."
+                                 Background="#141426"
+                                 Foreground="#FFF"
+                                 CornerRadius="6"
+                                 Margin="0,0,8,0" />
+                        <Button Grid.Column="1"
+                                Command="{Binding LoadRecentInvoicesCommand}"
+                                Content="Search"
+                                Background="#262645"
+                                Foreground="#E0E0FF"
+                                CornerRadius="6"
+                                Padding="14,8" />
+                    </Grid>
+
+                    <!-- Invoices List -->
+                    <Grid Grid.Row="2" RowDefinitions="Auto,*">
+                        <Border Grid.Row="0" Background="#141428" CornerRadius="6" Padding="12,8" Margin="0,0,0,4">
+                            <Grid ColumnDefinitions="1.5*,*,1.2*,*,*,Auto">
+                                <TextBlock Grid.Column="0" Text="Invoice #" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                                <TextBlock Grid.Column="1" Text="Date" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                                <TextBlock Grid.Column="2" Text="Customer" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                                <TextBlock Grid.Column="3" Text="Payment" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                                <TextBlock Grid.Column="4" Text="Total Paid" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                                <TextBlock Grid.Column="5" Text="Action" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="11" />
+                            </Grid>
+                        </Border>
+
+                        <ListBox Grid.Row="1"
+                                 ItemsSource="{Binding RecentInvoices}"
+                                 Background="Transparent">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="sales:InvoiceDto">
+                                    <Grid ColumnDefinitions="1.5*,*,1.2*,*,*,Auto" VerticalAlignment="Center">
+                                        <TextBlock Grid.Column="0" Text="{Binding InvoiceNumber}" FontFamily="Consolas,Monospace" FontWeight="Bold" Foreground="#38BDF8" />
+                                        <TextBlock Grid.Column="1" Text="{Binding CreatedAtUtc, StringFormat='{}{0:MM/dd HH:mm}'}" Foreground="#A0A0C0" FontSize="11" />
+                                        <TextBlock Grid.Column="2" Text="{Binding CustomerName, FallbackValue='Walk-in'}" Foreground="#FFF" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="3" Text="{Binding PaymentMethodName}" Foreground="#C0C0E0" FontSize="11" />
+                                        <TextBlock Grid.Column="4" Text="{Binding TotalAmountNpr, StringFormat='NPR {0:N2}'}" FontWeight="Bold" Foreground="#10B981" />
+                                        <Button Grid.Column="5"
+                                                Command="{Binding $parent[UserControl].((vm:SalesViewModel)DataContext).ReprintInvoiceReceiptCommand}"
+                                                CommandParameter="{Binding}"
+                                                Content="Reprint Receipt"
+                                                Background="#252545"
+                                                Foreground="#38BDF8"
+                                                FontSize="11"
+                                                Padding="8,4"
+                                                CornerRadius="4" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+
+                    <Button Grid.Row="3"
+                            Command="{Binding CloseHistoryModalCommand}"
+                            Content="Close"
+                            Background="#2B2B45"
+                            Foreground="#A0A0C0"
+                            HorizontalAlignment="Right"
+                            Padding="16,8"
+                            CornerRadius="6"
+                            Margin="0,12,0,0" />
+                </Grid>
+            </Border>
+        </Border>
+
+        <!-- ═══════════════════════════════════════ MODAL RETURN / REFUND OVERLAY ═══════════════ -->
+        <Border Grid.Row="0" Grid.RowSpan="2"
+                Background="#CC0B0B16"
+                IsVisible="{Binding IsReturnModalOpen}">
+            <Border Background="#1C1C32"
+                    BorderBrush="#313158"
+                    BorderThickness="1"
+                    CornerRadius="16"
+                    Padding="24"
+                    Width="480"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="↩️ Customer Return &amp; Refund" FontSize="18" FontWeight="Bold" Foreground="#FFFFFF" />
+                    <TextBlock Text="Return unopened medicines back into batch inventory and issue customer refund." FontSize="12" Foreground="#8E8EA0" />
+
+                    <!-- Error Banner -->
+                    <Border Background="#3B1822"
+                            BorderBrush="#E04060"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="12,10"
+                            IsVisible="{Binding ReturnErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Text="{Binding ReturnErrorMessage}" Foreground="#FF8090" TextWrapping="Wrap" />
+                    </Border>
+
+                    <!-- Batch Selector -->
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Select Batch to Return *" FontSize="12" Foreground="#A0A0C0" />
+                        <ComboBox ItemsSource="{Binding ReturnBatches}"
+                                  SelectedItem="{Binding ReturnSelectedBatch}"
+                                  HorizontalAlignment="Stretch"
+                                  Background="#141426"
+                                  Foreground="#FFFFFF"
+                                  CornerRadius="6">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate DataType="inv:BatchDto">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding MedicineName}" FontWeight="SemiBold" />
+                                        <TextBlock Text="—" Foreground="#666" />
+                                        <TextBlock Text="{Binding BatchCode}" Foreground="#38BDF8" FontFamily="Consolas,Monospace" />
+                                        <TextBlock Text="{Binding SellingPriceNpr, StringFormat='@ NPR {0:N2}'}" Foreground="#34D399" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <!-- Quantity & Refund Amount -->
+                    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto">
+                        <StackPanel Grid.Column="0" Margin="0,0,6,0" Spacing="4">
+                            <TextBlock Text="Quantity to Return *" FontSize="12" Foreground="#A0A0C0" />
+                            <NumericUpDown Value="{Binding ReturnQuantity}" Minimum="1" Maximum="10000" Background="#141426" Foreground="#FFF" CornerRadius="6" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="6,0,0,0" Spacing="4">
+                            <TextBlock Text="Refund Total" FontSize="12" Foreground="#A0A0C0" />
+                            <Border Background="#141426" CornerRadius="6" Padding="12,8">
+                                <TextBlock Text="{Binding ReturnRefundTotalNpr, StringFormat='NPR {0:N2}'}" FontSize="15" FontWeight="Bold" Foreground="#34D399" VerticalAlignment="Center" />
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Customer Name -->
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Customer Name / Contact" FontSize="12" Foreground="#A0A0C0" />
+                        <TextBox Text="{Binding ReturnCustomerName}" PlaceholderText="e.g. Ram Bahadur (Optional)" Background="#141426" Foreground="#FFF" CornerRadius="6" />
+                    </StackPanel>
+
+                    <!-- Return Reason -->
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Return Reason / Prescription Note *" FontSize="12" Foreground="#A0A0C0" />
+                        <TextBox Text="{Binding ReturnReason}" PlaceholderText="e.g. Unopened box, doctor adjusted dosage..." TextWrapping="Wrap" Height="65" Background="#141426" Foreground="#FFF" CornerRadius="6" />
+                    </StackPanel>
+
+                    <!-- Action Buttons -->
+                    <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,10,0,0">
+                        <Button Grid.Column="1"
+                                Command="{Binding CloseReturnModalCommand}"
+                                Content="Cancel"
+                                Background="#2B2B45"
+                                Foreground="#A0A0C0"
+                                Padding="16,8"
+                                CornerRadius="8"
+                                Margin="0,0,8,0" />
+                        <Button Grid.Column="2"
+                                Command="{Binding ProcessReturnCommand}"
+                                Content="Issue Refund &amp; Restock"
+                                Background="#059669"
+                                Foreground="#FFFFFF"
+                                FontWeight="SemiBold"
+                                Padding="18,8"
+                                CornerRadius="8" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+    </Grid>
 </UserControl>

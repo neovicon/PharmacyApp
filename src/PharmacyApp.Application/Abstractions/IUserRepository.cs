@@ -24,6 +24,11 @@ public interface IUserRepository
     Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Lists all user accounts.
+    /// </summary>
+    Task<IReadOnlyList<User>> ListAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Persists a newly created user account.
     /// </summary>
     Task AddAsync(User user, CancellationToken cancellationToken = default);

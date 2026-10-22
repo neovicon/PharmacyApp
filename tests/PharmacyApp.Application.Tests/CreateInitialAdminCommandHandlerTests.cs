@@ -144,6 +144,9 @@ public class TestUserRepository : IUserRepository
         return Task.CompletedTask;
     }
 
+    public Task<IReadOnlyList<User>> ListAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<User>>(_users.ToList());
+
     public bool SimulateAdminCreationRace { get; set; }
 
     public Task<bool> TryCreateInitialAdminAsync(User adminUser, CancellationToken cancellationToken = default)

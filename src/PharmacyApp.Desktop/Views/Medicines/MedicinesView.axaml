@@ -6,14 +6,263 @@
              mc:Ignorable="d"
              x:Class="PharmacyApp.Desktop.Views.Medicines.MedicinesView"
              x:DataType="vm:MedicinesViewModel">
-    <Design.DataContext>
-        <vm:MedicinesViewModel />
-    </Design.DataContext>
-    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16">
-        <TextBlock Text="💊" FontSize="64" HorizontalAlignment="Center" Foreground="#2A2A50" />
-        <TextBlock Text="{Binding PageTitle}" FontSize="24" FontWeight="SemiBold"
-                   Foreground="#E0E0FF" HorizontalAlignment="Center" />
-        <TextBlock Text="{Binding StatusMessage}" FontSize="14" Foreground="#6060A0"
-                   HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="480" TextAlignment="Center" />
-    </StackPanel>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="24">
+
+        <!-- ═══════════════════════════════════════ HEADER ═══════════════════════════════════════ -->
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Spacing="4">
+                <TextBlock Text="Medicine Catalogue" FontSize="24" FontWeight="Bold" Foreground="#FFFFFF" />
+                <TextBlock Text="Manage pharmaceutical master products, dosages, dispensing units, and reorder levels."
+                           FontSize="13" Foreground="#8E8EA0" />
+            </StackPanel>
+
+            <Button Grid.Column="1"
+                    Command="{Binding OpenCreateFormCommand}"
+                    IsVisible="{Binding CanManageMedicines}"
+                    Background="#4F46E5"
+                    Foreground="#FFFFFF"
+                    FontWeight="SemiBold"
+                    Padding="16,10"
+                    CornerRadius="8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="➕" FontSize="14" />
+                    <TextBlock Text="New Medicine" FontSize="14" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- ═══════════════════════════════════════ SEARCH & CONTROLS ════════════════════════════ -->
+        <Border Grid.Row="1" Background="#16162A" CornerRadius="12" BorderBrush="#252542" BorderThickness="1" Padding="16">
+            <Grid RowDefinitions="Auto,*">
+
+                <!-- Controls Bar -->
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,16">
+                    <!-- Search Input -->
+                    <TextBox Grid.Column="0"
+                             Text="{Binding SearchText}"
+                             PlaceholderText="Search by commercial name, generic name, barcode, brand, or category..."
+                             Background="#1F1F38"
+                             Foreground="#FFFFFF"
+                             BorderBrush="#2D2D50"
+                             CornerRadius="8"
+                             Padding="12,10"
+                             Margin="0,0,12,0" />
+
+                    <Button Grid.Column="1"
+                            Command="{Binding LoadMedicinesCommand}"
+                            Background="#2B2B4A"
+                            Foreground="#E0E0FF"
+                            Padding="14,10"
+                            CornerRadius="8"
+                            Margin="0,0,12,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="🔍" FontSize="12" />
+                            <TextBlock Text="Search" FontSize="13" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Filter buttons -->
+                    <ComboBox Grid.Column="2"
+                              ItemsSource="{Binding FilterOptions}"
+                              SelectedIndex="{Binding FilterIndex}"
+                              Background="#1F1F38"
+                              Foreground="#FFFFFF"
+                              BorderBrush="#2D2D50"
+                              CornerRadius="8"
+                              Padding="10,8" />
+                </Grid>
+
+                <!-- Data Table as ListBox with Header -->
+                <Grid Grid.Row="1" RowDefinitions="Auto,*">
+                    <!-- Table Header -->
+                    <Border Grid.Row="0" Background="#1C1C36" CornerRadius="6" Padding="12,10" Margin="0,0,0,6">
+                        <Grid ColumnDefinitions="2*,2*,*,*,1.2*,1.2*,*,80,70">
+                            <TextBlock Grid.Column="0" Text="Commercial Name" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                            <TextBlock Grid.Column="1" Text="Generic Name" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                            <TextBlock Grid.Column="2" Text="Form" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                            <TextBlock Grid.Column="3" Text="Unit" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                            <TextBlock Grid.Column="4" Text="Category" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                            <TextBlock Grid.Column="5" Text="Barcode" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                            <TextBlock Grid.Column="6" Text="Reorder Lvl" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" />
+                            <TextBlock Grid.Column="7" Text="Rx Req" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" HorizontalAlignment="Center" />
+                            <TextBlock Grid.Column="8" Text="Active" FontWeight="SemiBold" Foreground="#A0A0C0" FontSize="12" HorizontalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Table Rows -->
+                    <ListBox Grid.Row="1"
+                             ItemsSource="{Binding Medicines}"
+                             SelectedItem="{Binding SelectedMedicine}"
+                             Background="Transparent">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="2*,2*,*,*,1.2*,1.2*,*,80,70" VerticalAlignment="Center">
+                                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="Medium" Foreground="#FFFFFF" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="1" Text="{Binding GenericName}" Foreground="#B0B0D0" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="2" Text="{Binding DosageForm}" Foreground="#C0C0E0" />
+                                    <TextBlock Grid.Column="3" Text="{Binding DispensingUnit}" Foreground="#C0C0E0" />
+                                    <TextBlock Grid.Column="4" Text="{Binding Category}" Foreground="#8090C0" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="5" Text="{Binding Barcode}" Foreground="#707090" FontFamily="Consolas,Monospace" />
+                                    <TextBlock Grid.Column="6" Text="{Binding ReorderLevel}" Foreground="#E0E0FF" HorizontalAlignment="Center" />
+                                    <CheckBox Grid.Column="7" IsChecked="{Binding RequiresPrescription}" IsEnabled="False" HorizontalAlignment="Center" />
+                                    <CheckBox Grid.Column="8" IsChecked="{Binding IsActive}" IsEnabled="False" HorizontalAlignment="Center" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+
+            </Grid>
+        </Border>
+
+        <!-- ═══════════════════════════════════════ FOOTER & ACTIONS ═════════════════════════════ -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
+            <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" FontSize="12" Foreground="#7A7A9E" VerticalAlignment="Center" />
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" IsVisible="{Binding CanManageMedicines}">
+                <Button Command="{Binding OpenEditFormCommand}"
+                        IsEnabled="{Binding SelectedMedicine, Converter={x:Static ObjectConverters.IsNotNull}}"
+                        Background="#2B2B4A"
+                        Foreground="#E0E0FF"
+                        Padding="14,8"
+                        CornerRadius="6">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="✏️" FontSize="12" />
+                        <TextBlock Text="Edit Selected" FontSize="13" />
+                    </StackPanel>
+                </Button>
+
+                <Button Command="{Binding ToggleActiveStatusCommand}"
+                        IsEnabled="{Binding SelectedMedicine, Converter={x:Static ObjectConverters.IsNotNull}}"
+                        Background="#352030"
+                        Foreground="#FF9EAF"
+                        Padding="14,8"
+                        CornerRadius="6">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="🔄" FontSize="12" />
+                        <TextBlock Text="Toggle Status" FontSize="13" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- ═══════════════════════════════════════ MODAL EDIT/ADD FORM ═════════════════════════ -->
+        <Border Grid.Row="0" Grid.RowSpan="3"
+                Background="#CC0B0B16"
+                IsVisible="{Binding IsFormOpen}">
+            <Border Background="#1C1C32"
+                    BorderBrush="#313158"
+                    BorderThickness="1"
+                    CornerRadius="16"
+                    Padding="28"
+                    MaxWidth="640"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                <ScrollViewer MaxHeight="600">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="{Binding FormTitle}" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF" />
+
+                        <!-- Error Banner -->
+                        <Border Background="#3B1822"
+                                BorderBrush="#E04060"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12,10"
+                                IsVisible="{Binding FormErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <TextBlock Text="{Binding FormErrorMessage}" Foreground="#FF8090" TextWrapping="Wrap" />
+                        </Border>
+
+                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="0,4">
+                            <!-- Name -->
+                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,8,12" Spacing="4">
+                                <TextBlock Text="Commercial Name *" FontSize="12" Foreground="#A0A0C0" />
+                                <TextBox Text="{Binding FormName}" Background="#141426" Foreground="#FFF" CornerRadius="6" />
+                            </StackPanel>
+
+                            <!-- Generic Name -->
+                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="8,0,0,12" Spacing="4">
+                                <TextBlock Text="Generic Name *" FontSize="12" Foreground="#A0A0C0" />
+                                <TextBox Text="{Binding FormGenericName}" Background="#141426" Foreground="#FFF" CornerRadius="6" />
+                            </StackPanel>
+
+                            <!-- Dosage Form -->
+                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,8,12" Spacing="4">
+                                <TextBlock Text="Dosage Form *" FontSize="12" Foreground="#A0A0C0" />
+                                <TextBox Text="{Binding FormDosageForm}" PlaceholderText="e.g. Tablet, Syrup, Capsule" Background="#141426" Foreground="#FFF" CornerRadius="6" />
+                            </StackPanel>
+
+                            <!-- Dispensing Unit -->
+                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0,0,12" Spacing="4">
+                                <TextBlock Text="Dispensing Unit *" FontSize="12" Foreground="#A0A0C0" />
+                                <TextBox Text="{Binding FormDispensingUnit}" PlaceholderText="e.g. Strip, Bottle, Box" Background="#141426" Foreground="#FFF" CornerRadius="6" />
+                            </StackPanel>
+
+                            <!-- Brand -->
+                            <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,8,12" Spacing="4">
+                                <TextBlock Text="Brand (Optional)" FontSize="12" Foreground="#A0A0C0" />
+                                <TextBox Text="{Binding FormBrand}" Background="#141426" Foreground="#FFF" CornerRadius="6" />
+                            </StackPanel>
+
+                            <!-- Strength -->
+                            <StackPanel Grid.Row="2" Grid.Column="1" Margin="8,0,0,12" Spacing="4">
+                                <TextBlock Text="Strength (Optional)" FontSize="12" Foreground="#A0A0C0" />
+                                <TextBox Text="{Binding FormStrength}" PlaceholderText="e.g. 500mg, 10ml" Background="#141426" Foreground="#FFF" CornerRadius="6" />
+                            </StackPanel>
+
+                            <!-- Barcode -->
+                            <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,0,8,12" Spacing="4">
+                                <TextBlock Text="Barcode (Optional)" FontSize="12" Foreground="#A0A0C0" />
+                                <TextBox Text="{Binding FormBarcode}" Background="#141426" Foreground="#FFF" CornerRadius="6" />
+                            </StackPanel>
+
+                            <!-- Category -->
+                            <StackPanel Grid.Row="3" Grid.Column="1" Margin="8,0,0,12" Spacing="4">
+                                <TextBlock Text="Category" FontSize="12" Foreground="#A0A0C0" />
+                                <TextBox Text="{Binding FormCategory}" PlaceholderText="e.g. Antibiotic, Analgesic" Background="#141426" Foreground="#FFF" CornerRadius="6" />
+                            </StackPanel>
+
+                            <!-- Reorder Level -->
+                            <StackPanel Grid.Row="4" Grid.Column="0" Margin="0,0,8,12" Spacing="4">
+                                <TextBlock Text="Reorder Level *" FontSize="12" Foreground="#A0A0C0" />
+                                <NumericUpDown Value="{Binding FormReorderLevel}" Minimum="0" Maximum="100000" Background="#141426" Foreground="#FFF" CornerRadius="6" />
+                            </StackPanel>
+
+                            <!-- Prescription Required -->
+                            <StackPanel Grid.Row="4" Grid.Column="1" Margin="8,20,0,12" VerticalAlignment="Center">
+                                <CheckBox IsChecked="{Binding FormRequiresPrescription}" Content="Requires Prescription" Foreground="#E0E0FF" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Action Buttons -->
+                        <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,16,0,0">
+                            <Button Grid.Column="1"
+                                    Command="{Binding CloseFormCommand}"
+                                    Content="Cancel"
+                                    Background="#2B2B45"
+                                    Foreground="#A0A0C0"
+                                    Padding="18,10"
+                                    CornerRadius="8"
+                                    Margin="0,0,10,0" />
+
+                            <Button Grid.Column="2"
+                                    Command="{Binding SaveMedicineCommand}"
+                                    Content="Save Medicine"
+                                    Background="#4F46E5"
+                                    Foreground="#FFFFFF"
+                                    FontWeight="SemiBold"
+                                    Padding="22,10"
+                                    CornerRadius="8" />
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Border>
+
+    </Grid>
 </UserControl>

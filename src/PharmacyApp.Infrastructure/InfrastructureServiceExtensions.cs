@@ -3,6 +3,26 @@ using PharmacyApp.Application.Abstractions;
 using PharmacyApp.Application.Authentication;
 using PharmacyApp.Application.Authentication.Commands;
 using PharmacyApp.Application.Common;
+using PharmacyApp.Application.Medicines;
+using PharmacyApp.Application.Medicines.Commands;
+using PharmacyApp.Application.Medicines.Queries;
+using PharmacyApp.Application.Inventory;
+using PharmacyApp.Application.Inventory.Commands;
+using PharmacyApp.Application.Inventory.Queries;
+using PharmacyApp.Application.Sales;
+using PharmacyApp.Application.Sales.Commands;
+using PharmacyApp.Application.Sales.Queries;
+using PharmacyApp.Application.Dashboard;
+using PharmacyApp.Application.Reports;
+using PharmacyApp.Application.Settings;
+using PharmacyApp.Application.Settings.Commands;
+using PharmacyApp.Application.Settings.Queries;
+using PharmacyApp.Application.Users;
+using PharmacyApp.Application.Users.Commands;
+using PharmacyApp.Application.Users.Queries;
+using PharmacyApp.Application.Suppliers;
+using PharmacyApp.Application.Suppliers.Commands;
+using PharmacyApp.Application.Suppliers.Queries;
 using PharmacyApp.Infrastructure.Persistence;
 using PharmacyApp.Infrastructure.Security;
 using PharmacyApp.Infrastructure.Services;
@@ -33,14 +53,18 @@ public static class InfrastructureServiceExtensions
 
             var pathProvider = sp.GetRequiredService<IAppPathProvider>();
             string dbPath = Path.Combine(pathProvider.DataDirectory, "pharmacy.db");
-            return $"Data Source={dbPath};Cache=Shared;";
+            return $"Data Source={dbPath};Cache=Shared;Foreign Keys=True;Default Timeout=5;";
         });
+
+        // SQLite backup service
+        services.AddSingleton<ISqliteBackupService, SqliteBackupService>();
 
         // SQLite schema initializer
         services.AddSingleton(sp =>
         {
             string connectionString = sp.GetRequiredService<string>();
-            return new SqliteDatabaseInitializer(connectionString);
+            var backupService = sp.GetRequiredService<ISqliteBackupService>();
+            return new SqliteDatabaseInitializer(connectionString, backupService);
         });
 
         // User repository
@@ -48,6 +72,46 @@ public static class InfrastructureServiceExtensions
         {
             string connectionString = sp.GetRequiredService<string>();
             return new SqliteUserRepository(connectionString);
+        });
+
+        // Medicine, Batch, and StockAdjustment repositories
+        services.AddSingleton<IMedicineRepository>(sp =>
+        {
+            string connectionString = sp.GetRequiredService<string>();
+            return new SqliteMedicineRepository(connectionString);
+        });
+
+        services.AddSingleton<IBatchRepository>(sp =>
+        {
+            string connectionString = sp.GetRequiredService<string>();
+            return new SqliteBatchRepository(connectionString);
+        });
+
+        services.AddSingleton<IStockAdjustmentRepository>(sp =>
+        {
+            string connectionString = sp.GetRequiredService<string>();
+            return new SqliteStockAdjustmentRepository(connectionString);
+        });
+
+        services.AddSingleton<ISupplierRepository>(sp =>
+        {
+            string connectionString = sp.GetRequiredService<string>();
+            return new SqliteSupplierRepository(connectionString);
+        });
+
+        services.AddSingleton<IInvoiceRepository>(sp =>
+        {
+            string connectionString = sp.GetRequiredService<string>();
+            return new SqliteInvoiceRepository(connectionString);
+        });
+
+        services.AddSingleton<IReceiptPrinterService, ReceiptPrinterService>();
+
+        // Transaction runner
+        services.AddSingleton<ITransactionRunner>(sp =>
+        {
+            string connectionString = sp.GetRequiredService<string>();
+            return new SqliteTransactionRunner(connectionString);
         });
 
         // Session manager (singleton serving both ISessionManager and ICurrentUserService)
@@ -64,6 +128,49 @@ public static class InfrastructureServiceExtensions
         // Direct command handlers (no MediatR)
         services.AddTransient<ICommandHandler<CreateInitialAdminCommand, Guid>, CreateInitialAdminCommandHandler>();
         services.AddTransient<ICommandHandler<LoginCommand, UserSessionDto>, LoginCommandHandler>();
+
+        // Medicine validator
+        services.AddSingleton<IMedicineValidator, MedicineValidator>();
+
+        // Medicine command & query handlers
+        services.AddTransient<ICommandHandler<CreateMedicineCommand, Guid>, CreateMedicineCommandHandler>();
+        services.AddTransient<ICommandHandler<UpdateMedicineCommand>, UpdateMedicineCommandHandler>();
+        services.AddTransient<IQueryHandler<GetMedicineByIdQuery, MedicineDto>, GetMedicineByIdQueryHandler>();
+        services.AddTransient<IQueryHandler<GetMedicineByBarcodeQuery, MedicineDto>, GetMedicineByBarcodeQueryHandler>();
+        services.AddTransient<IQueryHandler<SearchMedicinesQuery, IReadOnlyList<MedicineDto>>, SearchMedicinesQueryHandler>();
+        services.AddTransient<IQueryHandler<ListMedicinesQuery, IReadOnlyList<MedicineDto>>, ListMedicinesQueryHandler>();
+
+        // Inventory command & query handlers
+        services.AddTransient<ICommandHandler<ReceiveBatchCommand, Guid>, ReceiveBatchCommandHandler>();
+        services.AddTransient<ICommandHandler<AdjustStockCommand>, AdjustStockCommandHandler>();
+        services.AddTransient<IQueryHandler<GetBatchesByMedicineIdQuery, IReadOnlyList<BatchDto>>, GetBatchesByMedicineIdQueryHandler>();
+        services.AddTransient<IQueryHandler<ListInventoryBatchesQuery, IReadOnlyList<BatchDto>>, ListInventoryBatchesQueryHandler>();
+        services.AddTransient<IQueryHandler<GetRecentStockAdjustmentsQuery, IReadOnlyList<StockAdjustmentDto>>, GetRecentStockAdjustmentsQueryHandler>();
+
+        // Sales command & query handlers
+        services.AddTransient<ICommandHandler<ProcessSaleCommand, SaleReceiptDto>, ProcessSaleCommandHandler>();
+        services.AddTransient<IQueryHandler<GetRecentInvoicesQuery, IReadOnlyList<InvoiceDto>>, GetRecentInvoicesQueryHandler>();
+
+        // Dashboard & Reports query handlers
+        services.AddTransient<IQueryHandler<GetDashboardSummaryQuery, DashboardSummaryDto>, GetDashboardSummaryQueryHandler>();
+        services.AddTransient<IQueryHandler<GetInventoryValuationQuery, InventoryValuationReportDto>, GetInventoryValuationQueryHandler>();
+
+        // Settings & Database Management services
+        services.AddSingleton<IPharmacyProfileService, JsonPharmacyProfileService>();
+        services.AddSingleton<IDatabaseManagementService, SqliteDatabaseManagementService>();
+        services.AddTransient<IQueryHandler<GetDatabaseStatusQuery, DatabaseStatusDto>, GetDatabaseStatusQueryHandler>();
+        services.AddTransient<ICommandHandler<CreateManualBackupCommand, BackupInfoDto>, CreateManualBackupCommandHandler>();
+
+        // User management query & command handlers
+        services.AddTransient<IQueryHandler<ListUsersQuery, IReadOnlyList<UserDto>>, ListUsersQueryHandler>();
+        services.AddTransient<ICommandHandler<CreateUserCommand, Guid>, CreateUserCommandHandler>();
+        services.AddTransient<ICommandHandler<ToggleUserActiveCommand>, ToggleUserActiveCommandHandler>();
+        services.AddTransient<ICommandHandler<ResetUserPasswordCommand>, ResetUserPasswordCommandHandler>();
+
+        // Supplier management query & command handlers
+        services.AddTransient<IQueryHandler<ListSuppliersQuery, IReadOnlyList<SupplierDto>>, ListSuppliersQueryHandler>();
+        services.AddTransient<ICommandHandler<CreateSupplierCommand, Guid>, CreateSupplierCommandHandler>();
+        services.AddTransient<ICommandHandler<ToggleSupplierActiveCommand>, ToggleSupplierActiveCommandHandler>();
 
         return services;
     }

@@ -10,19 +10,31 @@ using PharmacyApp.Desktop.ViewModels.Reports;
 using PharmacyApp.Desktop.ViewModels.Settings;
 using Xunit;
 
+using PharmacyApp.Application.Abstractions;
+using PharmacyApp.Infrastructure;
+
 namespace PharmacyApp.Desktop.Tests;
 
-public class NavigationServiceTests
+public class NavigationServiceTests : IDisposable
 {
+    private readonly IsolatedDesktopTestPathProvider _pathProvider = new();
     private readonly ServiceProvider _serviceProvider;
     private readonly NavigationService _navigationService;
 
     public NavigationServiceTests()
     {
         var services = new ServiceCollection();
+        services.AddInfrastructure();
+        services.AddSingleton<IAppPathProvider>(_pathProvider);
         services.AddDesktopServices();
         _serviceProvider = services.BuildServiceProvider();
         _navigationService = (NavigationService)_serviceProvider.GetRequiredService<INavigationService>();
+    }
+
+    public void Dispose()
+    {
+        _serviceProvider.Dispose();
+        _pathProvider.Dispose();
     }
 
     [Fact]
