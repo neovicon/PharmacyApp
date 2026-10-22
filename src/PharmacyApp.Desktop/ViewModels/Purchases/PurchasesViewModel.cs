@@ -27,10 +27,25 @@ public sealed partial class PurchasesViewModel : ViewModelBase, INavigationAware
     [ObservableProperty]
     private MedicineDto? _selectedMedicine;
 
+    partial void OnSelectedMedicineChanged(MedicineDto? value)
+    {
+        if (value != null)
+        {
+            IsSuggestionsOpen = false;
+        }
+        OnPropertyChanged(nameof(ShowNoMedicineMatchesWarning));
+    }
+
     [ObservableProperty]
     private string _medicineSearchText = string.Empty;
 
-    public bool ShowNoMedicineMatchesWarning => !string.IsNullOrWhiteSpace(MedicineSearchText) && FilteredMedicines.Count == 0;
+    [ObservableProperty]
+    private bool _isSuggestionsOpen;
+
+    public bool ShowNoMedicineMatchesWarning =>
+        !string.IsNullOrWhiteSpace(MedicineSearchText) &&
+        FilteredMedicines.Count == 0 &&
+        SelectedMedicine == null;
 
     public ObservableCollection<MedicineDto> AvailableMedicines { get; } = new();
     public ObservableCollection<MedicineDto> FilteredMedicines { get; } = new();
@@ -45,26 +60,25 @@ public sealed partial class PurchasesViewModel : ViewModelBase, INavigationAware
         FilteredMedicines.Clear();
         if (string.IsNullOrWhiteSpace(MedicineSearchText))
         {
-            foreach (var m in AvailableMedicines)
+            IsSuggestionsOpen = false;
+            OnPropertyChanged(nameof(ShowNoMedicineMatchesWarning));
+            return;
+        }
+
+        string term = MedicineSearchText.Trim();
+        foreach (var m in AvailableMedicines)
+        {
+            if (m.Name.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                m.GenericName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(m.Brand) && m.Brand.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(m.Barcode) && m.Barcode.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(m.Category) && m.Category.Contains(term, StringComparison.OrdinalIgnoreCase)))
             {
                 FilteredMedicines.Add(m);
             }
         }
-        else
-        {
-            string term = MedicineSearchText.Trim();
-            foreach (var m in AvailableMedicines)
-            {
-                if (m.Name.Contains(term, StringComparison.OrdinalIgnoreCase) ||
-                    m.GenericName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
-                    (!string.IsNullOrEmpty(m.Brand) && m.Brand.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
-                    (!string.IsNullOrEmpty(m.Barcode) && m.Barcode.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
-                    (!string.IsNullOrEmpty(m.Category) && m.Category.Contains(term, StringComparison.OrdinalIgnoreCase)))
-                {
-                    FilteredMedicines.Add(m);
-                }
-            }
-        }
+
+        IsSuggestionsOpen = FilteredMedicines.Count > 0 && SelectedMedicine == null;
         OnPropertyChanged(nameof(ShowNoMedicineMatchesWarning));
     }
 
@@ -73,6 +87,9 @@ public sealed partial class PurchasesViewModel : ViewModelBase, INavigationAware
     {
         SelectedMedicine = null;
         MedicineSearchText = string.Empty;
+        FilteredMedicines.Clear();
+        IsSuggestionsOpen = false;
+        OnPropertyChanged(nameof(ShowNoMedicineMatchesWarning));
     }
 
     [ObservableProperty]
@@ -179,12 +196,11 @@ public sealed partial class PurchasesViewModel : ViewModelBase, INavigationAware
 
                 if (prevMedId.HasValue)
                 {
-                    SelectedMedicine = AvailableMedicines.FirstOrDefault(m => m.Id == prevMedId.Value)
-                                       ?? AvailableMedicines.FirstOrDefault();
+                    SelectedMedicine = AvailableMedicines.FirstOrDefault(m => m.Id == prevMedId.Value);
                 }
                 else
                 {
-                    SelectedMedicine = AvailableMedicines.FirstOrDefault();
+                    SelectedMedicine = null;
                 }
             }
 

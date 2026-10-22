@@ -100,7 +100,8 @@
                     </Grid>
 
                     <!-- Medicine Search Results List Displayed on Down -->
-                    <Border Grid.Row="2" Background="#121224" CornerRadius="8" Padding="6" Margin="0,0,0,10" MaxHeight="180">
+                    <Border Grid.Row="2" Background="#121224" CornerRadius="8" Padding="6" Margin="0,0,0,10" MaxHeight="180"
+                            IsVisible="{Binding SearchResults.Count}">
                         <ListBox x:Name="SalesSearchResultsList"
                                  ItemsSource="{Binding SearchResults}"
                                  SelectedItem="{Binding SelectedMedicine}"

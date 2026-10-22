@@ -63,8 +63,8 @@ public class PurchasesViewModelTests : IDisposable
         await vm.InitializeAsync();
 
         Assert.NotEmpty(vm.AvailableMedicines);
-        Assert.NotNull(vm.SelectedMedicine);
-        Assert.Equal("Amoxicillin 500mg", vm.SelectedMedicine.Name);
+        Assert.Null(vm.SelectedMedicine);
+        Assert.Empty(vm.FilteredMedicines);
     }
 
     [Fact]
@@ -170,6 +170,7 @@ public class PurchasesViewModelTests : IDisposable
             Brand: "National Healthcare"));
 
         await vm.InitializeAsync();
+        vm.SelectedMedicine = vm.AvailableMedicines[0];
         vm.BatchCode = "";
         await vm.SubmitPurchaseCommand.ExecuteAsync(null);
         Assert.Contains("batch code", vm.ErrorMessage, StringComparison.OrdinalIgnoreCase);
@@ -214,24 +215,31 @@ public class PurchasesViewModelTests : IDisposable
         var vm = _provider.GetRequiredService<PurchasesViewModel>();
         await vm.InitializeAsync();
 
-        // Initially contains both
-        Assert.True(vm.FilteredMedicines.Count >= 2);
+        // Initially empty before any key is typed
+        Assert.Empty(vm.FilteredMedicines);
+        Assert.False(vm.IsSuggestionsOpen);
 
         // Filter by commercial name
         vm.MedicineSearchText = "para";
+        Assert.True(vm.IsSuggestionsOpen);
         Assert.Contains(vm.FilteredMedicines, m => m.Name.Contains("Paracetamol", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(vm.FilteredMedicines, m => m.Name.Contains("Amoxicillin", StringComparison.OrdinalIgnoreCase));
 
         // Filter by generic name
         vm.MedicineSearchText = "trihydrate";
+        Assert.True(vm.IsSuggestionsOpen);
         Assert.Single(vm.FilteredMedicines);
         Assert.Contains("Amoxicillin", vm.FilteredMedicines[0].Name);
 
         // Select medicine and then clear
         vm.SelectedMedicine = vm.FilteredMedicines[0];
         Assert.NotNull(vm.SelectedMedicine);
+        Assert.False(vm.IsSuggestionsOpen);
+
         vm.ClearSelectedMedicine();
         Assert.Null(vm.SelectedMedicine);
         Assert.Equal(string.Empty, vm.MedicineSearchText);
+        Assert.Empty(vm.FilteredMedicines);
+        Assert.False(vm.IsSuggestionsOpen);
     }
 }

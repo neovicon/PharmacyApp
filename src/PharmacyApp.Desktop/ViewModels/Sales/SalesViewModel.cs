@@ -245,7 +245,7 @@ public sealed partial class SalesViewModel : ViewModelBase, INavigationAware
     {
         if (string.IsNullOrWhiteSpace(SearchText))
         {
-            await LoadInitialMedicinesAsync();
+            SearchResults.Clear();
             return;
         }
 
