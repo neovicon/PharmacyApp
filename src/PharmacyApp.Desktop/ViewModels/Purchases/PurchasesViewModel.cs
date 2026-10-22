@@ -28,6 +28,54 @@ public sealed partial class PurchasesViewModel : ViewModelBase, INavigationAware
     private MedicineDto? _selectedMedicine;
 
     [ObservableProperty]
+    private string _medicineSearchText = string.Empty;
+
+    public bool ShowNoMedicineMatchesWarning => !string.IsNullOrWhiteSpace(MedicineSearchText) && FilteredMedicines.Count == 0;
+
+    public ObservableCollection<MedicineDto> AvailableMedicines { get; } = new();
+    public ObservableCollection<MedicineDto> FilteredMedicines { get; } = new();
+
+    partial void OnMedicineSearchTextChanged(string value)
+    {
+        ApplyMedicineFilter();
+    }
+
+    public void ApplyMedicineFilter()
+    {
+        FilteredMedicines.Clear();
+        if (string.IsNullOrWhiteSpace(MedicineSearchText))
+        {
+            foreach (var m in AvailableMedicines)
+            {
+                FilteredMedicines.Add(m);
+            }
+        }
+        else
+        {
+            string term = MedicineSearchText.Trim();
+            foreach (var m in AvailableMedicines)
+            {
+                if (m.Name.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    m.GenericName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    (!string.IsNullOrEmpty(m.Brand) && m.Brand.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(m.Barcode) && m.Barcode.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(m.Category) && m.Category.Contains(term, StringComparison.OrdinalIgnoreCase)))
+                {
+                    FilteredMedicines.Add(m);
+                }
+            }
+        }
+        OnPropertyChanged(nameof(ShowNoMedicineMatchesWarning));
+    }
+
+    [RelayCommand]
+    public void ClearSelectedMedicine()
+    {
+        SelectedMedicine = null;
+        MedicineSearchText = string.Empty;
+    }
+
+    [ObservableProperty]
     private SupplierDto? _selectedSupplier;
 
     [ObservableProperty]
@@ -88,7 +136,6 @@ public sealed partial class PurchasesViewModel : ViewModelBase, INavigationAware
     [ObservableProperty]
     private string? _addSupplierErrorMessage;
 
-    public ObservableCollection<MedicineDto> AvailableMedicines { get; } = new();
     public ObservableCollection<SupplierDto> AvailableSuppliers { get; } = new();
     public ObservableCollection<BatchDto> RecentBatches { get; } = new();
 
@@ -127,6 +174,8 @@ public sealed partial class PurchasesViewModel : ViewModelBase, INavigationAware
                 {
                     AvailableMedicines.Add(m);
                 }
+
+                ApplyMedicineFilter();
 
                 if (prevMedId.HasValue)
                 {

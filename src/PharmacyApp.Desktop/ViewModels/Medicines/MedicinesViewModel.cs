@@ -23,6 +23,11 @@ public sealed partial class MedicinesViewModel : ViewModelBase, INavigationAware
     [ObservableProperty]
     private string _searchText = string.Empty;
 
+    partial void OnSearchTextChanged(string value)
+    {
+        _ = LoadMedicinesAsync();
+    }
+
     [ObservableProperty]
     private int _filterIndex = 0; // 0: All, 1: Active, 2: Inactive
 

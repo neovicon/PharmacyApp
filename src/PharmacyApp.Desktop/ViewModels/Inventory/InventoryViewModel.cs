@@ -21,6 +21,11 @@ public sealed partial class InventoryViewModel : ViewModelBase, INavigationAware
     [ObservableProperty]
     private string _searchText = string.Empty;
 
+    partial void OnSearchTextChanged(string value)
+    {
+        _ = LoadBatchesAsync();
+    }
+
     [ObservableProperty]
     private int _filterOption = 1; // 0: All, 1: In-Stock Only, 2: Out of Stock
 

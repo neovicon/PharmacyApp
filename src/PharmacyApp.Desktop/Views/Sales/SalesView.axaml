@@ -78,16 +78,18 @@
                         </Grid>
                     </Border>
 
-                    <!-- Medicine Name Search Bar -->
+                    <!-- Medicine Name Search Bar with Live Keyword Matching & KeyDown -->
                     <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
                         <TextBox Grid.Column="0"
-                                 Text="{Binding SearchText}"
-                                 PlaceholderText="Search medicine by name..."
+                                 x:Name="SalesMedicineSearchBox"
+                                 Text="{Binding SearchText, Mode=TwoWay}"
+                                 PlaceholderText="🔍 Search medicine by name, generic, barcode..."
                                  Background="#1F1F38"
                                  Foreground="#FFF"
                                  CornerRadius="8"
                                  Padding="10,8"
-                                 Margin="0,0,8,0" />
+                                 Margin="0,0,8,0"
+                                 KeyDown="OnSalesSearchKeyDown" />
                         <Button Grid.Column="1"
                                 Command="{Binding SearchCommand}"
                                 Content="Search"
@@ -97,11 +99,13 @@
                                 Padding="14,8" />
                     </Grid>
 
-                    <!-- Medicine Search Results List -->
-                    <Border Grid.Row="2" Background="#121224" CornerRadius="8" Padding="6" Margin="0,0,0,10">
-                        <ListBox ItemsSource="{Binding SearchResults}"
+                    <!-- Medicine Search Results List Displayed on Down -->
+                    <Border Grid.Row="2" Background="#121224" CornerRadius="8" Padding="6" Margin="0,0,0,10" MaxHeight="180">
+                        <ListBox x:Name="SalesSearchResultsList"
+                                 ItemsSource="{Binding SearchResults}"
                                  SelectedItem="{Binding SelectedMedicine}"
-                                 Background="Transparent">
+                                 Background="Transparent"
+                                 KeyDown="OnSalesSearchResultsKeyDown">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Grid ColumnDefinitions="*,Auto,Auto">
@@ -131,7 +135,8 @@
                             <TextBlock Grid.Column="1" Text="Earliest Expiry First" FontSize="11" Foreground="#34D399" />
                         </Grid>
 
-                        <ComboBox ItemsSource="{Binding AvailableBatches}"
+                        <ComboBox x:Name="BatchSelectorComboBox"
+                                  ItemsSource="{Binding AvailableBatches}"
                                   SelectedItem="{Binding SelectedBatch}"
                                   HorizontalAlignment="Stretch"
                                   Background="#1F1F38"

@@ -75,8 +75,8 @@
                             </ComboBox>
                         </StackPanel>
 
-                        <!-- Medicine Selector with Refresh -->
-                        <StackPanel Spacing="4">
+                        <!-- Medicine Selector with Live Keyword Input & KeyDown Navigation -->
+                        <StackPanel Spacing="6" Margin="0,0,0,14">
                             <Grid ColumnDefinitions="*,Auto">
                                 <TextBlock Grid.Column="0" Text="Select Medicine Product *" FontSize="12" Foreground="#A0A0C0" VerticalAlignment="Center" />
                                 <Button Grid.Column="1"
@@ -94,34 +94,76 @@
                                     </StackPanel>
                                 </Button>
                             </Grid>
-                            <ComboBox ItemsSource="{Binding AvailableMedicines}"
-                                      SelectedItem="{Binding SelectedMedicine}"
-                                      PlaceholderText="-- Select medicine from catalogue --"
-                                      HorizontalAlignment="Stretch"
-                                      Background="#1F1F38"
-                                      Foreground="#FFFFFF"
-                                      CornerRadius="6">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate DataType="m:MedicineDto">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#FFFFFF" />
-                                            <TextBlock Text="—" Foreground="#666" />
-                                            <TextBlock Text="{Binding GenericName}" Foreground="#A0A0C0" />
-                                            <TextBlock Text="{Binding Strength, StringFormat='({0})'}" Foreground="#38BDF8" IsVisible="{Binding Strength, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
+
+                            <!-- Text Input Box for Keyword Search -->
+                            <TextBox x:Name="PurchasesMedicineSearchBox"
+                                     Text="{Binding MedicineSearchText, Mode=TwoWay}"
+                                     PlaceholderText="🔍 Type keyword to match medicine (Name, Generic, Barcode)..."
+                                     Background="#1F1F38"
+                                     Foreground="#FFFFFF"
+                                     BorderBrush="#2D2D50"
+                                     CornerRadius="6"
+                                     Padding="10,8"
+                                     KeyDown="OnMedicineSearchKeyDown" />
+
+                            <!-- Matched Keyword Medicines List Displayed on Down -->
+                            <Border Background="#121224"
+                                    BorderBrush="#252542"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    MaxHeight="140"
+                                    Padding="4"
+                                    IsVisible="{Binding FilteredMedicines.Count}">
+                                <ListBox x:Name="MatchedMedicinesListBox"
+                                         ItemsSource="{Binding FilteredMedicines}"
+                                         SelectedItem="{Binding SelectedMedicine}"
+                                         Background="Transparent"
+                                         KeyDown="OnMatchedMedicinesKeyDown">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate DataType="m:MedicineDto">
+                                            <Grid ColumnDefinitions="*,Auto" Margin="4,2">
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <TextBlock Text="{Binding GenericName, StringFormat='({0})'}" FontSize="11" Foreground="#A0A0C0" />
+                                                        <TextBlock Text="{Binding Strength}" FontSize="11" Foreground="#38BDF8" IsVisible="{Binding Strength, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="1" Text="{Binding DosageForm}" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Border>
 
                             <!-- Selected Medicine Details Ribbon -->
-                            <Border Background="#1C1C36" CornerRadius="6" Padding="10,6" Margin="0,2,0,0"
+                            <Border Background="#1E1B4B" BorderBrush="#6366F1" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,2,0,0"
                                     IsVisible="{Binding SelectedMedicine, Converter={x:Static ObjectConverters.IsNotNull}}">
-                                <Grid ColumnDefinitions="*,*,*">
-                                    <TextBlock Grid.Column="0" Text="{Binding SelectedMedicine.DosageForm, StringFormat='Form: {0}'}" FontSize="11" Foreground="#94A3B8" />
-                                    <TextBlock Grid.Column="1" Text="{Binding SelectedMedicine.DispensingUnit, StringFormat='Unit: {0}'}" FontSize="11" Foreground="#94A3B8" />
-                                    <TextBlock Grid.Column="2" Text="{Binding SelectedMedicine.Category, StringFormat='Category: {0}'}" FontSize="11" Foreground="#94A3B8" IsVisible="{Binding SelectedMedicine.Category, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="✓ Selected:" FontWeight="Bold" Foreground="#818CF8" />
+                                        <TextBlock Text="{Binding SelectedMedicine.Name}" FontWeight="Bold" Foreground="#FFFFFF" />
+                                        <TextBlock Text="{Binding SelectedMedicine.GenericName, StringFormat='({0})'}" Foreground="#C7D2FE" FontSize="11" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedMedicine.DosageForm, StringFormat='Form: {0}'}" FontSize="11" Foreground="#94A3B8" Margin="0,0,10,0" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" Text="{Binding SelectedMedicine.DispensingUnit, StringFormat='Unit: {0}'}" FontSize="11" Foreground="#94A3B8" Margin="0,0,10,0" VerticalAlignment="Center" />
+                                    <Button Grid.Column="3"
+                                            Command="{Binding ClearSelectedMedicineCommand}"
+                                            Content="✕ Change"
+                                            Background="#2D2B55"
+                                            Foreground="#F87171"
+                                            FontSize="10"
+                                            Padding="6,2"
+                                            CornerRadius="4" />
                                 </Grid>
                             </Border>
+
+                            <!-- Notice if keyword typed but no matches found -->
+                            <TextBlock Text="No matching medicines found for keyword."
+                                       FontSize="11"
+                                       Foreground="#F59E0B"
+                                       IsVisible="{Binding ShowNoMedicineMatchesWarning}"
+                                       Margin="4,2,0,0" />
 
                             <!-- Empty State Warning if no medicines exist -->
                             <Border Background="#3B2610" BorderBrush="#D97706" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,2,0,0"
@@ -137,7 +179,7 @@
                         <Grid ColumnDefinitions="*,*" RowDefinitions="Auto">
                             <StackPanel Grid.Column="0" Margin="0,0,6,0" Spacing="4">
                                 <TextBlock Text="Batch Code *" FontSize="12" Foreground="#A0A0C0" />
-                                <TextBox Text="{Binding BatchCode}" PlaceholderText="e.g. B-2026-01" Background="#1F1F38" Foreground="#FFF" CornerRadius="6" />
+                                <TextBox x:Name="BatchCodeInput" Text="{Binding BatchCode}" PlaceholderText="e.g. B-2026-01" Background="#1F1F38" Foreground="#FFF" CornerRadius="6" />
                             </StackPanel>
                             <StackPanel Grid.Column="1" Margin="6,0,0,0" Spacing="4">
                                 <TextBlock Text="Quantity Received *" FontSize="12" Foreground="#A0A0C0" />

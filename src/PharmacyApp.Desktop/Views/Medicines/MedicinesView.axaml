@@ -43,16 +43,18 @@
 
                 <!-- Controls Bar -->
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,16">
-                    <!-- Search Input -->
+                    <!-- Search Input with Live Match on KeyDown / Typing -->
                     <TextBox Grid.Column="0"
-                             Text="{Binding SearchText}"
-                             PlaceholderText="Search by commercial name, generic name, barcode, brand, or category..."
+                             x:Name="MedicinesSearchBox"
+                             Text="{Binding SearchText, Mode=TwoWay}"
+                             PlaceholderText="🔍 Search by commercial name, generic name, barcode, brand, or category..."
                              Background="#1F1F38"
                              Foreground="#FFFFFF"
                              BorderBrush="#2D2D50"
                              CornerRadius="8"
                              Padding="12,10"
-                             Margin="0,0,12,0" />
+                             Margin="0,0,12,0"
+                             KeyDown="OnCatalogueSearchKeyDown" />
 
                     <Button Grid.Column="1"
                             Command="{Binding LoadMedicinesCommand}"
@@ -97,6 +99,7 @@
 
                     <!-- Table Rows -->
                     <ListBox Grid.Row="1"
+                             x:Name="MedicinesListBox"
                              ItemsSource="{Binding Medicines}"
                              SelectedItem="{Binding SelectedMedicine}"
                              Background="Transparent">

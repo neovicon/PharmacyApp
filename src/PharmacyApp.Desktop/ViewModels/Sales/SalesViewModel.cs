@@ -272,6 +272,11 @@ public sealed partial class SalesViewModel : ViewModelBase, INavigationAware
         }
     }
 
+    partial void OnSearchTextChanged(string value)
+    {
+        _ = SearchAsync();
+    }
+
     partial void OnSelectedMedicineChanged(MedicineDto? value)
     {
         if (value is not null)

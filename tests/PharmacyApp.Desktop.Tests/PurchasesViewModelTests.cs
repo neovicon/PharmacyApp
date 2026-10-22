@@ -186,4 +186,52 @@ public class PurchasesViewModelTests : IDisposable
         await vm.SubmitPurchaseCommand.ExecuteAsync(null);
         Assert.Contains("negative", vm.ErrorMessage, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public async Task MedicineSearchText_FiltersMatchingMedicinesCorrectly()
+    {
+        var createMedHandler = _provider.GetRequiredService<ICommandHandler<CreateMedicineCommand, Guid>>();
+        await createMedHandler.HandleAsync(new CreateMedicineCommand(
+            Name: "Paracetamol 500mg",
+            GenericName: "Acetaminophen",
+            DosageForm: "Tablet",
+            DispensingUnit: "Tablets",
+            ReorderLevel: 50,
+            Category: "Analgesic",
+            Strength: "500mg",
+            Brand: "Apex Pharma"));
+
+        await createMedHandler.HandleAsync(new CreateMedicineCommand(
+            Name: "Amoxicillin 250mg",
+            GenericName: "Amoxicillin Trihydrate",
+            DosageForm: "Suspension",
+            DispensingUnit: "Bottles",
+            ReorderLevel: 10,
+            Category: "Antibiotic",
+            Strength: "250mg/5ml",
+            Brand: "Deurali Janta"));
+
+        var vm = _provider.GetRequiredService<PurchasesViewModel>();
+        await vm.InitializeAsync();
+
+        // Initially contains both
+        Assert.True(vm.FilteredMedicines.Count >= 2);
+
+        // Filter by commercial name
+        vm.MedicineSearchText = "para";
+        Assert.Contains(vm.FilteredMedicines, m => m.Name.Contains("Paracetamol", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(vm.FilteredMedicines, m => m.Name.Contains("Amoxicillin", StringComparison.OrdinalIgnoreCase));
+
+        // Filter by generic name
+        vm.MedicineSearchText = "trihydrate";
+        Assert.Single(vm.FilteredMedicines);
+        Assert.Contains("Amoxicillin", vm.FilteredMedicines[0].Name);
+
+        // Select medicine and then clear
+        vm.SelectedMedicine = vm.FilteredMedicines[0];
+        Assert.NotNull(vm.SelectedMedicine);
+        vm.ClearSelectedMedicine();
+        Assert.Null(vm.SelectedMedicine);
+        Assert.Equal(string.Empty, vm.MedicineSearchText);
+    }
 }
